@@ -1,0 +1,60 @@
+// @ts-nocheck
+import { User } from '../models/user.model.js'
+
+// [GET] /admin/users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password')
+    res.json({ users })
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch users' })
+  }
+}
+
+// [GET] /admin/users/count
+export const getUserCount = async (req, res) => {
+  try {
+    const count = await User.countDocuments()
+    res.json({ count })
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to count users' })
+  }
+}
+
+// [GET] /admin/users/:id
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ user })
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch user' })
+  }
+}
+
+// [PUT] /admin/users/:id
+export const updateUser = async (req, res) => {
+  try {
+    const { name, email, role } = req.body
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { name, email, role },
+      { new: true }
+    ).select('-password')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ user })
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update user' })
+  }
+}
+
+// [DELETE] /admin/users/:id
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ message: 'User deleted successfully' })
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete user' })
+  }
+}
