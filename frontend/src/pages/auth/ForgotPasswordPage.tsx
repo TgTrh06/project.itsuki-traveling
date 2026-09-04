@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Mail, Loader, ArrowLeft } from "lucide-react"

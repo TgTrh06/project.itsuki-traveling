@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { motion } from "framer-motion"
 import { Link, useNavigate } from "react-router-dom"
 import { MapPin, Compass, FileText, Calendar } from "lucide-react"

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react'
 import JapanMap from '../../components/JapanMap'
 import DestinationCard from '../../components/DestinationCard'

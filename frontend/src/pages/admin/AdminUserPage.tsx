@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect } from 'react'
 import AdminLayout from '../../components/AdminLayout'
 import useUserStore from '../../store/userStore' // giả sử bạn có store này

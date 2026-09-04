@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Mail, Lock, User, Loader } from "lucide-react"

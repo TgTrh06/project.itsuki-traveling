@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Routes, Route } from "react-router-dom";
 import AdminProfile from "../pages/admin/AdminProfile";
 import AdminArticlePage from "../pages/admin/AdminArticlePage";

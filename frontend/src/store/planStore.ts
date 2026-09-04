@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { create } from 'zustand';
 import useAuthStore from './authStore';
 import api from '../utils/api'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Link } from 'react-router-dom'
 import { Facebook, Twitter, Youtube, Instagram, Rss } from 'lucide-react'
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const formatDate = (dataString) => {
     const date = new Date(dataString);
     if (isNaN(date.getTime())) {

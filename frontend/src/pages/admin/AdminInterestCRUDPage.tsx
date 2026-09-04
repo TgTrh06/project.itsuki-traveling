@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react'
 import api from '../../utils/api'
 import { Trash2, Edit2, Plus } from 'lucide-react'

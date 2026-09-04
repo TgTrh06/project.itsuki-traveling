@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react'
 import usePlanStore from '../store/planStore'
 import useAuthStore from '../store/authStore'

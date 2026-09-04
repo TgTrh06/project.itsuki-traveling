@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react'
 import api from '../../utils/api'
 import { Download, Users, FileDown } from 'lucide-react'

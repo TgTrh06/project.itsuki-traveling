@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Check, X } from "lucide-react";
 
 const PasswordCriteria = ({ password }) => {

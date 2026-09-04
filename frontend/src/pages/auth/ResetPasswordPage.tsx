@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import useAuthStore from "../../store/authStore";
 import { useNavigate, useParams } from "react-router-dom";

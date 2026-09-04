@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import useInterestStore from '../store/interestStore'

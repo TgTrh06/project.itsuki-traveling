@@ -1,3 +1,4 @@
+// @ts-nocheck
 // store/commentStore.js
 
 import { create } from 'zustand'

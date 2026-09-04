@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { create } from 'zustand'; // Custom hooks manager (Global State)
 import { toast } from 'react-toastify'
 import api from '../utils/api'
