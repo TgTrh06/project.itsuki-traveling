@@ -5,9 +5,6 @@ import { Interest } from "../models/interest.model.js";
 import { connectDB } from "../config/db.js";
 import slugify from "../utils/slugify.js";
 
-dotenv.config();
-await connectDB();
-
 const interests = [
   "accommodation",
   "activities",
@@ -19,20 +16,29 @@ const interests = [
   "transportation",
 ];
 
-const seedInterests = async () => {
-  try {
-    await Interest.deleteMany();
-    const interestDocs = interests.map((title) => ({
-      title,
-      slug: slugify(title),
-    }));
-    await Interest.insertMany(interestDocs);
-    console.log("✅ Interests seeded successfully");
-    process.exit();
-  } catch (err) {
-    console.error("❌ Error seeding interests:", err);
-    process.exit(1);
-  }
+export async function seedInterests() {
+  await Interest.deleteMany({});
+  const interestDocs = interests.map((title) => ({
+    title,
+    slug: slugify(title),
+  }));
+  await Interest.insertMany(interestDocs);
+  console.log("✅ Interests seeded successfully");
 };
 
-seedInterests();
+async function runStandaloneSeed() {
+  dotenv.config();
+  await connectDB();
+  try {
+    await seedInterests();
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+if (process.argv[1]?.endsWith("interest.seed.ts")) {
+  runStandaloneSeed().catch((error) => {
+    console.error("❌ Failed to seed interests:", error);
+    process.exitCode = 1;
+  });
+}

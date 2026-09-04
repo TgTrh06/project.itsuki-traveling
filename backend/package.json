@@ -8,6 +8,7 @@
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "type-check": "tsc --noEmit",
+    "seed": "tsx src/seeds/index.ts",
     "seed:destinations": "tsx src/seeds/destination.seed.ts",
     "seed:articles": "tsx src/seeds/article.seed.ts",
     "seed:interests": "tsx src/seeds/interest.seed.ts"

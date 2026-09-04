@@ -8,17 +8,9 @@ import dotenv from "dotenv";
 
 import slugify from "../utils/slugify.js";
 
-dotenv.config();
-await mongoose.connect(process.env.MONGO_URI);
-
-async function seedDestinations() {
-  try {
-    // Connect to MongoDB
-    await connectDB();
-    console.log("✅ Connected to MongoDB");
-
-    // 2️⃣ Đọc file SVG
-    const svgData = fs.readFileSync("src/assets/japanLow.svg", "utf-8");
+export async function seedDestinations() {
+  // 2️⃣ Đọc file SVG
+  const svgData = fs.readFileSync("src/assets/japanLow.svg", "utf-8");
 
     // 3️⃣ Parse SVG để lấy dữ liệu
     const dom = new JSDOM(svgData);
@@ -42,23 +34,30 @@ async function seedDestinations() {
       });
     });
 
-    if (destinations.length === 0) {
-      console.log("⚠️ Không tìm thấy path nào trong SVG!");
-      process.exit(1);
-    }
+  if (destinations.length === 0) {
+    throw new Error("No destination paths were found in the Japan SVG");
+  }
 
     // 4️⃣ Xóa dữ liệu cũ và thêm mới
-    await Destination.deleteMany({});
-    await Destination.insertMany(destinations);
+  await Destination.deleteMany({});
+  await Destination.insertMany(destinations);
 
-    console.log(
-      `🎉 Đã thêm ${destinations.length} địa điểm từ SVG vào MongoDB.`
-    );
-  } catch (error) {
-    console.error("❌ Lỗi:", error);
+  console.log(`🎉 Added ${destinations.length} destinations from the Japan SVG.`);
+}
+
+async function runStandaloneSeed() {
+  dotenv.config();
+  await connectDB();
+  try {
+    await seedDestinations();
   } finally {
-    mongoose.connection.close();
+    await mongoose.disconnect();
   }
 }
 
-seedDestinations();
+if (process.argv[1]?.endsWith("destination.seed.ts")) {
+  runStandaloneSeed().catch((error) => {
+    console.error("❌ Failed to seed destinations:", error);
+    process.exitCode = 1;
+  });
+}

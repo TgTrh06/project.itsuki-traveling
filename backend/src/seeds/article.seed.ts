@@ -7,20 +7,21 @@ import { Destination } from "../models/destination.model.js";
 import { Interest } from "../models/interest.model.js";
 import { connectDB } from "../config/db.js";
 
-dotenv.config();
-await connectDB();
+export async function seedArticles() {
+  const users = await User.find();
+  const destinations = await Destination.find();
+  const interests = await Interest.find();
 
-const seedArticles = async () => {
-  try {
-    await Article.deleteMany();
+  if (!users.length) {
+    console.warn("⚠️ Skipped article seeding because no user exists in the database.");
+    return false;
+  }
 
-    const users = await User.find();
-    const destinations = await Destination.find();
-    const interests = await Interest.find();
+  if (!destinations.length || !interests.length) {
+    throw new Error("Missing destinations or interests in DB");
+  }
 
-    if (!users.length || !destinations.length || !interests.length) {
-      throw new Error("Missing users, destinations, or interests in DB");
-    }
+  await Article.deleteMany({});
 
     const tokyo = destinations.find((d) => d.slug === 'tokyo');
 
@@ -59,12 +60,23 @@ const seedArticles = async () => {
       );
     }
 
-    console.log("✅ Articles and Destination references seeded successfully");
-    process.exit();
-  } catch (err) {
-    console.error("❌ Error seeding articles:", err);
-    process.exit(1);
-  }
+  console.log("✅ Articles and Destination references seeded successfully");
+  return true;
 };
 
-seedArticles();
+async function runStandaloneSeed() {
+  dotenv.config();
+  await connectDB();
+  try {
+    await seedArticles();
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+if (process.argv[1]?.endsWith("article.seed.ts")) {
+  runStandaloneSeed().catch((error) => {
+    console.error("❌ Failed to seed articles:", error);
+    process.exitCode = 1;
+  });
+}
