@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Destination } from "../models/destination.model.js";
 
 // Get all

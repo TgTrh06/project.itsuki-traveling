@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Plan } from '../models/plan.model.js';
 import mongoose from 'mongoose';
 

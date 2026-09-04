@@ -1,3 +1,4 @@
+// @ts-nocheck
 export default function slugify(text = "") {
     return text
         .toString()

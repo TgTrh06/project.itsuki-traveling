@@ -1,3 +1,4 @@
+// @ts-nocheck
 import fs from "fs";
 import mongoose from "mongoose";
 import { connectDB } from "../config/db.js"

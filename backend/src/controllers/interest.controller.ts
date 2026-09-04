@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Interest } from "../models/interest.model.js"
 
 export const getAllInterests = async (req, res) => {

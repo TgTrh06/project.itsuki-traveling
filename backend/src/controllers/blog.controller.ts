@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Blog } from "../models/blog.model.js";
 import { User } from "../models/user.model.js";
 

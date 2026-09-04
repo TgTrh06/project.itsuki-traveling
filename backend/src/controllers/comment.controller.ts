@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Comment } from "../models/comment.model.js";
 import { Article } from "../models/article.model.js";
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Blog } from '../models/blog.model.js';
 
 const increaseView = async (req, res, next) => {

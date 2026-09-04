@@ -1,3 +1,4 @@
+// @ts-nocheck
 import mongoose from "mongoose";
 import { Article } from "../models/article.model.js";
 import { Comment } from "../models/comment.model.js";

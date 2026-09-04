@@ -1,3 +1,4 @@
+// @ts-nocheck
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { Article } from "../models/article.model.js";

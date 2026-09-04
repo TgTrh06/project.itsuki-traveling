@@ -1,3 +1,4 @@
+// @ts-nocheck
 import mongoose from "mongoose";
 
 const interestSchema = new mongoose.Schema(

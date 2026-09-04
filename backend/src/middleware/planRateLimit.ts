@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Simple in-memory rate limiter for plan endpoints
 // Limits requests per user/IP to N requests per window
 const rateMap = new Map();

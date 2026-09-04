@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express from 'express';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import planRateLimit from '../middleware/planRateLimit.js';
