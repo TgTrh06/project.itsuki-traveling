@@ -1,11 +1,11 @@
-// @ts-nocheck
 import { useState, useRef, useEffect } from "react";
+import type { KeyboardEvent } from "react";
 
-const useVerificationCode = (onSubmit) => {
+const useVerificationCode = (onSubmit: (code: string) => void) => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const inputRefs = useRef([]);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  const handleChange = (index, value) => {
+  const handleChange = (index: number, value: string) => {
     const newCode = [...code];
     if (value.length > 1) {
       const pastedCode = value.slice(0, 6).split("");
@@ -13,7 +13,7 @@ const useVerificationCode = (onSubmit) => {
         newCode[i] = pastedCode[i] || "";
       }
       setCode(newCode);
-      const lastFilledIndex = newCode.findLastIndex((digit) => digit !== "");
+      const lastFilledIndex = newCode.reduce((lastIndex, digit, digitIndex) => digit !== "" ? digitIndex : lastIndex, -1);
       const focusIndex = lastFilledIndex < 5 ? lastFilledIndex + 1 : 5;
       inputRefs.current[focusIndex]?.focus();
     } else {
@@ -25,7 +25,7 @@ const useVerificationCode = (onSubmit) => {
     }
   };
 
-  const handleKeyDown = (index, e) => {
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -35,7 +35,7 @@ const useVerificationCode = (onSubmit) => {
     if (code.every((digit) => digit !== "")) {
       onSubmit(code.join(""));
     }
-  }, [code]);
+  }, [code, onSubmit]);
 
   return { code, setCode, inputRefs, handleChange, handleKeyDown };
 };

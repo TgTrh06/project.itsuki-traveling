@@ -1,8 +1,7 @@
-// @ts-nocheck
 import type { Config } from 'tailwindcss'
 
 export default {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     './pages/**/*.{js,jsx}',
     './components/**/*.{js,jsx}',
