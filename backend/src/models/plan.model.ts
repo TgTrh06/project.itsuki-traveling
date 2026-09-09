@@ -1,7 +1,7 @@
-// @ts-nocheck
 import mongoose from 'mongoose';
+import type { PlanFields, PlanItemFields } from "../types/models.js";
 
-const PlanItemSchema = new mongoose.Schema(
+const PlanItemSchema = new mongoose.Schema<PlanItemFields>(
   {
     _id: { type: String, required: true }, // keep article/destination id as string
     title: String,
@@ -15,7 +15,7 @@ const PlanItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const PlanSchema = new mongoose.Schema(
+const PlanSchema = new mongoose.Schema<PlanFields>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     items: [PlanItemSchema],
@@ -23,4 +23,4 @@ const PlanSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Plan = mongoose.model('Plan', PlanSchema);
+export const Plan = mongoose.model<PlanFields>('Plan', PlanSchema);

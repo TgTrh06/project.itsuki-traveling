@@ -1,9 +1,15 @@
-// @ts-nocheck
+import type { Request, Response } from "express";
 import { Comment } from "../models/comment.model.js";
 import { Article } from "../models/article.model.js";
 
+const messageOf = (error: unknown) =>
+    error instanceof Error ? error.message : "Unexpected error";
+
+const commentContent = (value: unknown) =>
+    typeof value === "string" ? value.trim() : "";
+
 // Get all comments for an article
-export const getCommentsByArticle = async (req, res) => {
+export const getCommentsByArticle = async (req: Request, res: Response) => {
     try {
         const { articleId } = req.params;
 
@@ -19,16 +25,20 @@ export const getCommentsByArticle = async (req, res) => {
 
         res.status(200).json(comments);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: messageOf(error) });
     }
 };
 
 // Create a comment
-export const addComment = async (req, res) => {
+export const addComment = async (req: Request, res: Response) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Authentication required" });
+        }
+
         const userId = req.user._id;
         const articleId = req.params.id;
-        const { content } = req.body;
+        const content = commentContent(req.body.content);
 
         // Verify article exists
         const article = await Article.findById(articleId);
@@ -36,14 +46,14 @@ export const addComment = async (req, res) => {
             return res.status(404).json({ message: "Article not found" });
         }
 
-        if (!content || content.trim() === "") {
+        if (!content) {
             return res.status(400).json({ message: "Comment content is required" });
         }
 
         const comment = await Comment.create({
             user: userId,
             article: articleId,
-            content: content.trim(),
+            content,
         });
 
         await comment.populate("user", "name avatar email");
@@ -57,15 +67,18 @@ export const addComment = async (req, res) => {
             comment
         });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: messageOf(error) });
     }
 };
 
 // Update a comment
-export const updateComment = async (req, res) => {
+export const updateComment = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { content } = req.body;
+        const content = commentContent(req.body.content);
+        if (!req.user) {
+            return res.status(401).json({ message: "Authentication required" });
+        }
         const userId = req.user._id;
 
         const comment = await Comment.findById(id);
@@ -78,25 +91,28 @@ export const updateComment = async (req, res) => {
             return res.status(403).json({ message: "Not authorized to update this comment" });
         }
 
-        if (!content || content.trim() === "") {
+        if (!content) {
             return res.status(400).json({ message: "Comment content is required" });
         }
 
-        comment.content = content.trim();
+        comment.content = content;
         await comment.save();
 
         const populatedComment = await comment.populate("user", "name avatar email");
 
         res.status(200).json(populatedComment);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: messageOf(error) });
     }
 };
 
 // Delete a comment
-export const deleteComment = async (req, res) => {
+export const deleteComment = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        if (!req.user) {
+            return res.status(401).json({ message: "Authentication required" });
+        }
         const userId = req.user._id;
 
         const comment = await Comment.findById(id);
@@ -113,6 +129,6 @@ export const deleteComment = async (req, res) => {
 
         res.status(200).json({ message: "Comment deleted successfully" });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: messageOf(error) });
     }
 };

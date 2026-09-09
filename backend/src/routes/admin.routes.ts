@@ -1,4 +1,3 @@
-// @ts-nocheck
 import express from 'express'
 import { verifyToken, verifyAdmin } from '../middleware/auth.middleware.js'
 

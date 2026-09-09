@@ -1,17 +1,31 @@
-// @ts-nocheck
 import bcrypt from 'bcryptjs';
+import type { Request, Response } from "express";
 import { User } from '../models/user.model.js';
 import {
     sendVerificationEmail,
     sendPasswordResetEmail,
     sendResetSuccessEmail
 } from '../mailtrap/email.js';
-import { generateTokenAndSetCookie } from '../utils/generateTokenAndSetCookie.js';
+import { clearAuthCookie, generateTokenAndSetCookie } from '../utils/generateTokenAndSetCookie.js';
+import { logger } from "../utils/logger.js";
 
-export const register = async (req, res) => {
+const messageOf = (error: unknown) =>
+    error instanceof Error ? error.message : "Unexpected error";
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+    value !== null && typeof value === "object" && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : {};
+
+const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
+
+export const register = async (req: Request, res: Response) => {
     // Handle register logic
     try {
-        const { name, email, password, role } = req.body;
+        const body = asRecord(req.body);
+        const name = text(body.name);
+        const email = text(body.email).toLowerCase();
+        const password = text(body.password);
 
         // Check required fields
         if (!name || !email || !password) {
@@ -51,17 +65,17 @@ export const register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: role || 'user',
+            // Privileged accounts are created through controlled seed/admin workflows only.
+            role: 'user',
         });
         await user.save();
 
         // Generate JWT token
-        const token = generateTokenAndSetCookie(res, user._id);
+        generateTokenAndSetCookie(res, user._id.toString());
 
         res.status(201).json({
             success: true,
             message: 'User registered successfully. Please verify your email.',
-            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -70,14 +84,17 @@ export const register = async (req, res) => {
             },
         })
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        logger.warn("Registration failed", { error: messageOf(error) });
+        res.status(400).json({ success: false, message: messageOf(error) });
     }
 };
 
-export const login = async (req, res) => {
+export const login = async (req: Request, res: Response) => {
     // Handle login logic
     try {
-        const { email, password } = req.body;
+        const body = asRecord(req.body);
+        const email = text(body.email).toLowerCase();
+        const password = text(body.password);
 
         // Validate required fields
         if (!email || !password) {
@@ -97,7 +114,7 @@ export const login = async (req, res) => {
         }
 
         // Generate JWT token
-        const token = generateTokenAndSetCookie(res, user._id);
+        generateTokenAndSetCookie(res, user._id.toString());
 
         user.lastLogin = new Date();
         await user.save();
@@ -105,7 +122,6 @@ export const login = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
-            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -116,19 +132,20 @@ export const login = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("Error in login ", error);
-        res.status(400).json({ success: false, message: error.message });
+        logger.warn("Login failed", { error: messageOf(error) });
+        res.status(400).json({ success: false, message: messageOf(error) });
     }
 };
 
-export const logout = async (req, res) => {
-    res.clearCookie("token");
+export const logout = async (_req: Request, res: Response) => {
+    clearAuthCookie(res);
     res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
 // Get current authenticated user
-export const checkAuth = async (req, res) => {
+export const checkAuth = async (req: Request, res: Response) => {
     try {
+        if (!req.user) return res.status(401).json({ success: false, message: "Authentication required" });
         const user = await User.findById(req.user._id).select("-password");
         if (!user) {
             return res.status(400).json({ success: false, message: "User not found" });
@@ -146,15 +163,18 @@ export const checkAuth = async (req, res) => {
             }
         });
     } catch (error) {
-        console.log("Error in checkAuth ", error);
-        res.status(400).json({ success: false, message: error.message });
+        logger.warn("Authentication lookup failed", { error: messageOf(error) });
+        res.status(400).json({ success: false, message: messageOf(error) });
     }
 }
 
 // Update user profile
-export const updateProfile = async (req, res) => {
+export const updateProfile = async (req: Request, res: Response) => {
     try {
-        const { name, email } = req.body;
+        if (!req.user) return res.status(401).json({ success: false, message: "Authentication required" });
+        const body = asRecord(req.body);
+        const name = text(body.name);
+        const email = text(body.email).toLowerCase();
         const userId = req.user._id;
 
         // Validate input
@@ -191,15 +211,18 @@ export const updateProfile = async (req, res) => {
             }
         });
     } catch (error) {
-        console.log("Error in updateProfile ", error);
-        res.status(400).json({ success: false, message: error.message });
+        logger.warn("Profile update failed", { error: messageOf(error) });
+        res.status(400).json({ success: false, message: messageOf(error) });
     }
 };
 
 // Change password
-export const changePassword = async (req, res) => {
+export const changePassword = async (req: Request, res: Response) => {
     try {
-        const { currentPassword, newPassword } = req.body;
+        if (!req.user) return res.status(401).json({ success: false, message: "Authentication required" });
+        const body = asRecord(req.body);
+        const currentPassword = text(body.currentPassword);
+        const newPassword = text(body.newPassword);
         const userId = req.user._id;
 
         // Validate input
@@ -233,7 +256,7 @@ export const changePassword = async (req, res) => {
             message: "Password changed successfully"
         });
     } catch (error) {
-        console.log("Error in changePassword ", error);
-        res.status(400).json({ success: false, message: error.message });
+        logger.warn("Password change failed", { error: messageOf(error) });
+        res.status(400).json({ success: false, message: messageOf(error) });
     }
 };

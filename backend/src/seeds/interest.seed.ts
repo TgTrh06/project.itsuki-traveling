@@ -1,9 +1,9 @@
-// @ts-nocheck
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { Interest } from "../models/interest.model.js";
 import { connectDB } from "../config/db.js";
 import slugify from "../utils/slugify.js";
+import { assertSafeSeedEnvironment } from "./seed-guard.js";
 
 const interests = [
   "accommodation",
@@ -28,6 +28,7 @@ export async function seedInterests() {
 
 async function runStandaloneSeed() {
   dotenv.config();
+  assertSafeSeedEnvironment();
   await connectDB();
   try {
     await seedInterests();

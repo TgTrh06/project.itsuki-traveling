@@ -1,11 +1,19 @@
-// @ts-nocheck
+import type { Request, Response } from "express";
 import { Destination } from "../models/destination.model.js";
 
+const messageOf = (error: unknown) =>
+    error instanceof Error ? error.message : "Unexpected error";
+
+const queryNumber = (value: unknown, fallback: number) => {
+    const parsed = typeof value === "string" ? Number.parseInt(value, 10) : Number.NaN;
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 // Get all
-export const getAllDestinations = async (req, res) => {
+export const getAllDestinations = async (req: Request, res: Response) => {
     try {
-        const page = Math.max(parseInt(req.query.page) || 1, 1);
-        const limit = Math.max(parseInt(req.query.limit) || 20, 1);
+        const page = Math.max(queryNumber(req.query.page, 1), 1);
+        const limit = Math.max(queryNumber(req.query.limit, 20), 1);
         const skip = (page - 1) * limit;
 
         const total = await Destination.countDocuments();
@@ -25,12 +33,12 @@ export const getAllDestinations = async (req, res) => {
 
         res.json({ data: destinationsWithCount, total, page, pages });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: messageOf(error) });
     }
 };
 
 // Get by slug
-export const getDestinationBySlug = async (req, res) => {
+export const getDestinationBySlug = async (req: Request, res: Response) => {
     const { slug } = req.params;
     
     const destination = await Destination.findOne({ slug }).populate("articles");
@@ -40,7 +48,7 @@ export const getDestinationBySlug = async (req, res) => {
 };
 
 // Update
-export const updateDestination = async (req, res) => {
+export const updateDestination = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const updated = await Destination.findByIdAndUpdate(id, req.body, { new: true });
@@ -48,6 +56,6 @@ export const updateDestination = async (req, res) => {
         
         res.json(updated);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: messageOf(error) });
     }
 };

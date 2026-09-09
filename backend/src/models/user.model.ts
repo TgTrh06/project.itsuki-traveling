@@ -1,7 +1,7 @@
-// @ts-nocheck
 import mongoose from "mongoose";
+import type { UserFields } from "../types/models.js";
 
-const userSchema = new mongoose.Schema(
+const userSchema = new mongoose.Schema<UserFields>(
     {
         name: {
             type: String,
@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ['user', 'admin'],
+            enum: ['user', 'admin'] as const,
             default: 'user'
         },
         lastLogin: {
@@ -42,5 +42,5 @@ const userSchema = new mongoose.Schema(
     { timestamps:true }
 );
 
-export const User = mongoose.model('User', userSchema);
+export const User = mongoose.model<UserFields>('User', userSchema);
 

@@ -1,7 +1,7 @@
-// @ts-nocheck
 import mongoose from "mongoose";
+import type { CommentFields } from "../types/models.js";
 
-const commentSchema = new mongoose.Schema({
+const commentSchema = new mongoose.Schema<CommentFields>({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -23,4 +23,4 @@ const commentSchema = new mongoose.Schema({
     },
 });
 
-export const Comment = mongoose.model("Comment", commentSchema);
+export const Comment = mongoose.model<CommentFields>("Comment", commentSchema);

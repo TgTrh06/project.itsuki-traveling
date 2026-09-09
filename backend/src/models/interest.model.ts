@@ -1,7 +1,7 @@
-// @ts-nocheck
 import mongoose from "mongoose";
+import type { InterestFields } from "../types/models.js";
 
-const interestSchema = new mongoose.Schema(
+const interestSchema = new mongoose.Schema<InterestFields>(
     {
         title: {
             type: String,
@@ -16,4 +16,4 @@ const interestSchema = new mongoose.Schema(
     {  timestamps: true }
 );
 
-export const Interest = mongoose.model("Interest", interestSchema);
+export const Interest = mongoose.model<InterestFields>("Interest", interestSchema);

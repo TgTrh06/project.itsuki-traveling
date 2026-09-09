@@ -1,4 +1,3 @@
-// @ts-nocheck
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { Article } from "../models/article.model.js";
@@ -6,6 +5,7 @@ import { User } from "../models/user.model.js";
 import { Destination } from "../models/destination.model.js";
 import { Interest } from "../models/interest.model.js";
 import { connectDB } from "../config/db.js";
+import { assertSafeSeedEnvironment } from "./seed-guard.js";
 
 export async function seedArticles() {
   const users = await User.find();
@@ -26,8 +26,8 @@ export async function seedArticles() {
     const tokyo = destinations.find((d) => d.slug === 'tokyo');
 
     for (let i = 0; i < 20; i++) {
-      const randomUser = users[i % users.length]._id;
-      const randomDestination = (i === 0 && tokyo) ? tokyo._id : destinations[i % destinations.length]._id;
+      const randomUser = users[i % users.length]!._id;
+      const randomDestination = (i === 0 && tokyo) ? tokyo._id : destinations[i % destinations.length]!._id;
       const randomInterests = interests
         .sort(() => 0.5 - Math.random())
         .slice(0, 3)
@@ -66,6 +66,7 @@ export async function seedArticles() {
 
 async function runStandaloneSeed() {
   dotenv.config();
+  assertSafeSeedEnvironment();
   await connectDB();
   try {
     await seedArticles();

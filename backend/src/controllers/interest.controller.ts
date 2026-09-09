@@ -1,16 +1,18 @@
-// @ts-nocheck
 import { Interest } from "../models/interest.model.js"
+import type { Request, Response } from "express"
 
-export const getAllInterests = async (req, res) => {
+const messageOf = (error: unknown) => error instanceof Error ? error.message : "Unexpected error"
+
+export const getAllInterests = async (_req: Request, res: Response) => {
   try {
     const interests = await Interest.find().sort({ createdAt: -1 })
     res.status(200).json(interests)
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: messageOf(error) })
   }
 }
 
-export const getInterestBySlug = async (req, res) => {
+export const getInterestBySlug = async (req: Request, res: Response) => {
   try {
     const { slug } = req.params
     const interest = await Interest.findOne({ slug })
@@ -21,11 +23,11 @@ export const getInterestBySlug = async (req, res) => {
 
     res.status(200).json(interest)
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: messageOf(error) })
   }
 }
 
-export const createInterest = async (req, res) => {
+export const createInterest = async (req: Request, res: Response) => {
   try {
     const { title, slug } = req.body
 
@@ -36,11 +38,11 @@ export const createInterest = async (req, res) => {
     const interest = await Interest.create({ title, slug })
     res.status(201).json({ success: true, interest })
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    res.status(400).json({ message: messageOf(error) })
   }
 }
 
-export const updateInterest = async (req, res) => {
+export const updateInterest = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
     const { title, slug } = req.body
@@ -61,11 +63,11 @@ export const updateInterest = async (req, res) => {
 
     res.status(200).json({ success: true, interest })
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    res.status(400).json({ message: messageOf(error) })
   }
 }
 
-export const deleteInterest = async (req, res) => {
+export const deleteInterest = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
 
@@ -77,6 +79,6 @@ export const deleteInterest = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Interest deleted' })
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: messageOf(error) })
   }
 }

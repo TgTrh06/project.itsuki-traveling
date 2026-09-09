@@ -1,8 +1,8 @@
-// @ts-nocheck
 import express from "express";
 
 import { verifyAdmin, verifyToken } from "../middleware/auth.middleware.js";
 import upload from "../middleware/upload.middleware.js";
+import { validateUploadedImage } from "../middleware/upload-validation.middleware.js";
 import {
     createArticle,
     deleteArticle,
@@ -22,8 +22,8 @@ router.get("/:citySlug/:articleSlug", getArticleByCityAndSlug);
 router.get("/:id", getArticleById);
 
 // Admin only
-router.post("/", verifyToken, verifyAdmin, upload.single('image'), createArticle);
-router.put("/:id/edit", verifyToken, verifyAdmin, upload.single('image'), updateArticle);
+router.post("/", verifyToken, verifyAdmin, upload.single('image'), validateUploadedImage, createArticle);
+router.put("/:id/edit", verifyToken, verifyAdmin, upload.single('image'), validateUploadedImage, updateArticle);
 router.delete("/:id", verifyToken, verifyAdmin, deleteArticle);
 
 // Interact

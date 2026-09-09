@@ -1,7 +1,7 @@
-// @ts-nocheck
 import mongoose from "mongoose";
+import type { ArticleFields } from "../types/models.js";
 
-const articleSchema = new mongoose.Schema(
+const articleSchema = new mongoose.Schema<ArticleFields>(
     {
         title: {
             type: String,
@@ -64,4 +64,4 @@ const articleSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-export const Article = mongoose.model("Article", articleSchema);
+export const Article = mongoose.model<ArticleFields>("Article", articleSchema);

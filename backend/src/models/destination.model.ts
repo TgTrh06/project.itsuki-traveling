@@ -1,7 +1,7 @@
-// @ts-nocheck
 import mongoose from "mongoose";
+import type { DestinationFields } from "../types/models.js";
 
-const destinationSchema = new mongoose.Schema(
+const destinationSchema = new mongoose.Schema<DestinationFields>(
   {
     title: {
       type: String,
@@ -38,4 +38,4 @@ const destinationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Destination = mongoose.model("Destination", destinationSchema);
+export const Destination = mongoose.model<DestinationFields>("Destination", destinationSchema);

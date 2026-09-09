@@ -1,8 +1,8 @@
-// @ts-nocheck
 import { User } from '../models/user.model.js'
+import type { Request, Response } from "express"
 
 // [GET] /admin/users
-export const getAllUsers = async (req, res) => {
+export const getAllUsers = async (_req: Request, res: Response) => {
   try {
     const users = await User.find().select('-password')
     res.json({ users })
@@ -12,7 +12,7 @@ export const getAllUsers = async (req, res) => {
 }
 
 // [GET] /admin/users/count
-export const getUserCount = async (req, res) => {
+export const getUserCount = async (_req: Request, res: Response) => {
   try {
     const count = await User.countDocuments()
     res.json({ count })
@@ -22,7 +22,7 @@ export const getUserCount = async (req, res) => {
 }
 
 // [GET] /admin/users/:id
-export const getUserById = async (req, res) => {
+export const getUserById = async (req: Request, res: Response) => {
   try {
     const user = await User.findById(req.params.id).select('-password')
     if (!user) return res.status(404).json({ message: 'User not found' })
@@ -33,7 +33,7 @@ export const getUserById = async (req, res) => {
 }
 
 // [PUT] /admin/users/:id
-export const updateUser = async (req, res) => {
+export const updateUser = async (req: Request, res: Response) => {
   try {
     const { name, email, role } = req.body
     const user = await User.findByIdAndUpdate(
@@ -49,7 +49,7 @@ export const updateUser = async (req, res) => {
 }
 
 // [DELETE] /admin/users/:id
-export const deleteUser = async (req, res) => {
+export const deleteUser = async (req: Request, res: Response) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id)
     if (!user) return res.status(404).json({ message: 'User not found' })
