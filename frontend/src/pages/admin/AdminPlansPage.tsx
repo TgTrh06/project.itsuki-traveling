@@ -1,12 +1,15 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import api from '../../utils/api'
 import { Download, Users, FileDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/AdminLayout'
+import type { PlanItem, User } from "../../types/models";
+
+interface PlanSummary { _id: string; user?: User; items?: PlanItem[]; updatedAt?: string | Date }
+interface PlansResponse { data?: PlanSummary[]; page?: number; pages?: number }
 
 export default function AdminPlansPage() {
-    const [plans, setPlans] = useState([])
+    const [plans, setPlans] = useState<PlanSummary[]>([])
     const [page, setPage] = useState(1)
     const [pages, setPages] = useState(1)
     const [loading, setLoading] = useState(false)
@@ -14,12 +17,10 @@ export default function AdminPlansPage() {
     const fetchPlans = async (p = 1) => {
         setLoading(true)
         try {
-            const res = await api.get(`/admin/plans?page=${p}&limit=20`)
+            const res = await api.get<PlansResponse>(`/admin/plans?page=${p}&limit=20`)
             setPlans(res.data.data || [])
             setPage(res.data.page || 1)
             setPages(res.data.pages || 1)
-        } catch (err) {
-            console.error(err)
         } finally {
             setLoading(false)
         }
@@ -30,12 +31,12 @@ export default function AdminPlansPage() {
     }, [])
 
     const handleExportJSON = () => {
-        const url = api.defaults.baseURL + '/admin/plans-export'
+        const url = (api.defaults.baseURL ?? '') + '/admin/plans-export'
         window.open(url, '_blank')
     }
 
     const handleExportCSV = () => {
-        const url = api.defaults.baseURL + '/admin/plans-export-csv'
+        const url = (api.defaults.baseURL ?? '') + '/admin/plans-export-csv'
         window.open(url, '_blank')
     }
 
@@ -98,7 +99,7 @@ export default function AdminPlansPage() {
                                             </Link>
                                         </td>
                                         <td className="p-4 text-muted-foreground">{(p.items || []).length}</td>
-                                        <td className="p-4 text-muted-foreground">{new Date(p.updatedAt).toLocaleString()}</td>
+                                        <td className="p-4 text-muted-foreground">{p.updatedAt ? new Date(p.updatedAt).toLocaleString() : '—'}</td>
                                         <td className="p-4">
                                             <Link
                                                 to={`/admin/plans/${p.user?._id}`}

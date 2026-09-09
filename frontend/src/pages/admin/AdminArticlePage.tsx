@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect } from 'react'
 import useArticleStore from '../../store/articleStore'
 import ArticleCard from '../../components/ArticleCard'

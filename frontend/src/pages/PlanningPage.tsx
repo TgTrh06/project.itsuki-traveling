@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react'
 import usePlanStore from '../store/planStore'
 import useAuthStore from '../store/authStore'
@@ -8,6 +7,13 @@ import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
 import toast from 'react-hot-toast'
 import { Trash2, MapPin, Navigation, Settings } from 'lucide-react'
+import type { LatLngTuple } from "leaflet";
+import type { Location, PlanItem } from "../types/models";
+
+type LocatedPlanItem = PlanItem & { location: Location };
+type RouteInfo = { distance: string; time: string; mode: "car" | "moto"; avoidTolls: boolean };
+const hasLocation = (item: PlanItem): item is LocatedPlanItem =>
+  Boolean(item.location && Number.isFinite(item.location.lat) && Number.isFinite(item.location.lng));
 
 // Fix Leaflet icon
 let DefaultIcon = L.icon({
@@ -19,11 +25,11 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 // Component to fit map bounds
-function MapUpdater({ items }) {
+function MapUpdater({ items }: { items: LocatedPlanItem[] }) {
   const map = useMap()
   useEffect(() => {
     if (items.length > 0) {
-      const bounds = L.latLngBounds(items.map(i => [i.location.lat, i.location.lng]))
+      const bounds = L.latLngBounds(items.map((item): LatLngTuple => [item.location.lat, item.location.lng]))
       map.fitBounds(bounds, { padding: [50, 50] })
     }
   }, [items, map])
@@ -31,17 +37,17 @@ function MapUpdater({ items }) {
 }
 
 export default function PlanningPage() {
-  const { plannedItems, removeItem, clearPlan, addItem, loadForUser, currentUserId } = usePlanStore()
+  const { plannedItems, removeItem, clearPlan, currentUserId } = usePlanStore()
   const { user } = useAuthStore()
-  const [optimizedItems, setOptimizedItems] = useState([])
-  const [routeInfo, setRouteInfo] = useState(null)
+  const [optimizedItems, setOptimizedItems] = useState<LocatedPlanItem[]>([])
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null)
 
   // Route Settings
-  const [travelMode, setTravelMode] = useState('car') // 'car' | 'moto'
+  const [travelMode, setTravelMode] = useState<"car" | "moto">('car')
   const [avoidTolls, setAvoidTolls] = useState(false)
 
   useEffect(() => {
-    setOptimizedItems(plannedItems)
+    setOptimizedItems(plannedItems.filter(hasLocation))
   }, [plannedItems])
 
   useEffect(() => {
@@ -49,7 +55,7 @@ export default function PlanningPage() {
   }, [user, plannedItems])
 
   // Haversine formula to calculate distance in km
-  const getDistance = (lat1, lon1, lat2, lon2) => {
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371 // Radius of the earth in km
     const dLat = deg2rad(lat2 - lat1)
     const dLon = deg2rad(lon2 - lon1)
@@ -62,24 +68,27 @@ export default function PlanningPage() {
     return d
   }
 
-  const deg2rad = (deg) => {
+  const deg2rad = (deg: number) => {
     return deg * (Math.PI / 180)
   }
 
   const handleOptimize = () => {
-    if (plannedItems.length < 2) {
+    if (optimizedItems.length < 2) {
       toast.error("Need at least 2 locations to optimize route")
       return
     }
 
     // Nearest Neighbor Algorithm
-    let unvisited = [...plannedItems]
-    const path = [unvisited.shift()] // Start with the first item
+    const unvisited = [...optimizedItems]
+    const firstItem = unvisited.shift()
+    if (!firstItem) return
+    const path: LocatedPlanItem[] = [firstItem]
     let totalDist = 0
 
     while (unvisited.length > 0) {
       const current = path[path.length - 1]
-      let nearest = null
+      if (!current) break
+      let nearest: LocatedPlanItem | null = null
       let minDist = Infinity
       let nearestIndex = -1
 
@@ -231,7 +240,6 @@ export default function PlanningPage() {
 
               {/* Markers */}
               {optimizedItems.map((item, index) => (
-                item.location && item.location.lat && (
                   <Marker
                     key={item._id}
                     position={[item.location.lat, item.location.lng]}
@@ -241,15 +249,13 @@ export default function PlanningPage() {
                       <div className="text-sm">{item.location.address}</div>
                     </Popup>
                   </Marker>
-                )
-              ))}
+                ))}
 
               {/* Route Line */}
               {optimizedItems.length > 1 && (
                 <Polyline
                   positions={optimizedItems
-                    .filter(i => i.location && i.location.lat)
-                    .map(i => [i.location.lat, i.location.lng])
+                    .map((item): LatLngTuple => [item.location.lat, item.location.lng])
                   }
                   color={travelMode === 'moto' ? "#e11d48" : "#2563eb"} // Red for moto, Blue for car
                   weight={4}
@@ -258,7 +264,7 @@ export default function PlanningPage() {
                 />
               )}
 
-              <MapUpdater items={optimizedItems.filter(i => i.location && i.location.lat)} />
+              <MapUpdater items={optimizedItems} />
             </MapContainer>
           </div>
         </div>

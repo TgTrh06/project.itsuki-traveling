@@ -1,10 +1,10 @@
-// @ts-nocheck
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { User, LogOut, ChevronDown } from "lucide-react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import useAuthStore from "../store/authStore"
 import useDestinationStore from "../store/destinationStore"
+import type { Destination } from "../types/models";
 
 const dropdownVariants = {
   hidden: { opacity: 0, y: -10 },
@@ -13,7 +13,10 @@ const dropdownVariants = {
 }
 
 // Hàm phân loại dữ liệu để tạo layout nhiều cột
-const categorizeDestinations = (destinations) => {
+interface DropdownItem { title: string; slug: string; link: string; articleCount: number }
+interface CategorizedItems { "Top Destinations": DropdownItem[]; Prefectures: DropdownItem[][] }
+
+const categorizeDestinations = (destinations: Destination[]): CategorizedItems => {
   // Sắp xếp destinations theo số bài viết giảm dần
   const sorted = [...destinations].sort((a, b) => (b.articleCount || 0) - (a.articleCount || 0));
   
@@ -33,7 +36,7 @@ const categorizeDestinations = (destinations) => {
   const numPrefectureColumns = 3;
   const chunkSize = Math.ceil(prefectures.length / numPrefectureColumns);
 
-  const prefectureColumns = [];
+  const prefectureColumns: DropdownItem[][] = [];
   for (let i = 0; i < numPrefectureColumns; i++) {
     prefectureColumns.push(prefectures.slice(i * chunkSize, i * chunkSize + chunkSize));
   }
@@ -45,7 +48,7 @@ const categorizeDestinations = (destinations) => {
 };
 
 
-function NavDropdown({ label, categorizedItems, isOpen, onToggle }) {
+function NavDropdown({ label, categorizedItems, isOpen, onToggle }: { label: string; categorizedItems: CategorizedItems; isOpen: boolean; onToggle: () => void }) {
   const topDestinations = categorizedItems['Top Destinations'] || [];
   const prefectureColumns = categorizedItems['Prefectures'] || [];
 
@@ -130,16 +133,16 @@ function NavDropdown({ label, categorizedItems, isOpen, onToggle }) {
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore()
   const { destinations, fetchDestinations } = useDestinationStore()
-  const [openDropdown, setOpenDropdown] = useState(null)
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
   // Tự động đóng dropdown khi click ra ngoài
   useEffect(() => {
-    const closeDropdowns = (e) => {
+    const closeDropdowns = (e: MouseEvent) => {
       // Chỉ đóng nếu click nằm ngoài khu vực dropdown/button
-      if (!e.target.closest('.relative')) {
+      if (!(e.target instanceof Element) || !e.target.closest('.relative')) {
         setOpenDropdown(null)
         setIsUserDropdownOpen(false)
       }
@@ -157,9 +160,7 @@ export default function Navbar() {
       await logout()
       setIsUserDropdownOpen(false)
       navigate("/")
-    } catch (error) {
-      console.error('Logout error:', error)
-    }
+    } catch { /* the auth store owns the error state */ }
   }
 
   // ⚠️ SỬ DỤNG HÀM PHÂN LOẠI MỚI Ở ĐÂY

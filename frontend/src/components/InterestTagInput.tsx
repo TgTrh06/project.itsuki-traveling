@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import useInterestStore from '../store/interestStore'
 
-export default function InterestTagInput({ value, onChange }) {
+export default function InterestTagInput({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
   const { interests, fetchInterests } = useInterestStore()
   const [isOpen, setIsOpen] = useState(false)
 
@@ -11,7 +10,7 @@ export default function InterestTagInput({ value, onChange }) {
     fetchInterests().catch(() => {})
   }, [fetchInterests])
 
-  const toggleInterest = (interestId) => {
+  const toggleInterest = (interestId: string) => {
     if (value.includes(interestId)) {
       onChange(value.filter(id => id !== interestId))
     } else {

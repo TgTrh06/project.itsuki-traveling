@@ -1,25 +1,28 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
+import axios from "axios";
 import { useParams, Link } from 'react-router-dom'
 import api from '../../utils/api'
 import { ArrowLeft, MapPin } from 'lucide-react'
 import AdminLayout from '../../components/AdminLayout'
+import type { PlanItem, User } from "../../types/models";
+
+interface PlanDetail { _id: string; user?: User; items?: PlanItem[]; updatedAt?: string | Date }
 
 export default function AdminPlanDetailPage() {
     const { userId } = useParams()
-    const [plan, setPlan] = useState(null)
+    const [plan, setPlan] = useState<PlanDetail | null>(null)
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         const fetch = async () => {
             setLoading(true)
             setError(null)
             try {
-                const res = await api.get(`/admin/plans/${userId}`)
+                const res = await api.get<{ plan: PlanDetail }>(`/admin/plans/${userId}`)
                 setPlan(res.data.plan)
             } catch (err) {
-                setError(err.response?.data?.message || 'Failed to load plan')
+                setError(axios.isAxiosError<{ message?: string }>(err) ? err.response?.data?.message ?? 'Failed to load plan' : 'Failed to load plan')
             } finally {
                 setLoading(false)
             }
@@ -69,7 +72,7 @@ export default function AdminPlanDetailPage() {
                         Plan for {plan.user?.name || plan.user?.email || userId}
                     </h2>
                     <div className="text-sm text-muted-foreground mt-2">
-                        Last updated: {new Date(plan.updatedAt).toLocaleString()}
+                        Last updated: {plan.updatedAt ? new Date(plan.updatedAt).toLocaleString() : '—'}
                     </div>
                 </div>
 
@@ -100,7 +103,7 @@ export default function AdminPlanDetailPage() {
                                                     </div>
                                                 )}
                                             </div>
-                                            {item.meta && (
+                                            {item.meta !== undefined && item.meta !== null && (
                                                 <div className="mt-3 p-3 bg-muted rounded text-xs">
                                                     <div className="font-semibold mb-1">Metadata:</div>
                                                     <pre className="overflow-x-auto">{JSON.stringify(item.meta, null, 2)}</pre>

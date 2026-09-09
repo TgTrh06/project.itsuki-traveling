@@ -1,12 +1,14 @@
-// @ts-nocheck
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ChevronRight, ChevronDown, FileText, Users, MapPin, Zap } from 'lucide-react'
+import type { ReactNode } from "react";
+import { Link } from 'react-router-dom'
+import { ChevronRight, ChevronDown, FileText, Users, MapPin, Zap, type LucideIcon } from 'lucide-react'
 
-export default function AdminLayout({ children }) {
-  const [openSection, setOpenSection] = useState('articles')
+interface AdminSection { key: string; title: string; icon: LucideIcon; items: Array<{ title: string; to: string }> }
 
-  const sections = [
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  const [openSection, setOpenSection] = useState<string | null>('articles')
+
+  const sections: AdminSection[] = [
     {
       key: 'articles',
       title: 'Articles',

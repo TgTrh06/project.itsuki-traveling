@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Link } from "react-router-dom"
@@ -6,6 +5,7 @@ import useArticleStore from "../../store/articleStore"
 import useInterestStore from "../../store/interestStore"
 import useDestinationStore from "../../store/destinationStore"
 import ArticleCard from "../../components/ArticleCard"
+import type { Article } from "../../types/models";
 
 const pageVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -18,7 +18,7 @@ export default function ArticleListPage() {
   const { interests, fetchInterests } = useInterestStore()
   const { destinations, fetchDestinations } = useDestinationStore()
 
-  const [topArticles, setTopArticles] = useState([])
+  const [topArticles, setTopArticles] = useState<Article[]>([])
   const [filters, setFilters] = useState({
     interest: '',
     destination: '',
@@ -35,12 +35,6 @@ export default function ArticleListPage() {
     }).catch(() => { })
   }, [])
 
-  // Debug log
-  useEffect(() => {
-    console.log('Interests:', interests)
-    console.log('Destinations:', destinations)
-  }, [interests, destinations])
-
   useEffect(() => {
     fetchArticles({
       page: 1,
@@ -50,7 +44,7 @@ export default function ArticleListPage() {
     }).catch(() => { })
   }, [filters])
 
-  const gotoPage = (p) => {
+  const gotoPage = (p: number) => {
     if (p < 1 || p > pages) return
     fetchArticles({
       page: p,
@@ -60,7 +54,7 @@ export default function ArticleListPage() {
     }).catch(() => { })
   }
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (key: "interest" | "destination", value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
@@ -214,7 +208,7 @@ export default function ArticleListPage() {
                   topArticles.map((article, index) => (
                     <Link
                       key={article._id}
-                      to={`/articles/${article.destination?.slug || ''}/${article.slug}`}
+                      to={`/articles/${typeof article.destination === "object" && article.destination ? article.destination.slug : ''}/${article.slug}`}
                       className="flex gap-3 hover:bg-muted p-2 rounded-lg transition-colors group"
                     >
                       <span className="bg-primary text-primary-foreground w-7 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold mt-0.5">

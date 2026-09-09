@@ -1,5 +1,6 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
+import type { FormEvent } from "react";
+import axios from "axios";
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User, Mail, Calendar, Lock, Edit2, X } from 'lucide-react'
@@ -51,23 +52,23 @@ export default function UserProfile() {
       try {
         setLoading(true)
         // Fetch user's articles
-        const artRes = await api.get(`/articles?author=${user?._id}`)
+        const authorId = user?.id ?? user?._id
+        if (!authorId) return
+        const artRes = await api.get<{ total?: number }>(`/articles?author=${authorId}`)
         setArticleCount(artRes.data.total || 0)
-      } catch (err) {
-        console.error('Error fetching stats:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    if (user?._id) {
+    if (user?.id || user?._id) {
       fetchStats()
       setEditName(user.name || '')
       setEditEmail(user.email || '')
     }
   }, [isAuthenticated, user, navigate])
 
-  const handleEditProfile = async (e) => {
+  const handleEditProfile = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!editName.trim()) {
       toast.error('Name is required')
@@ -76,7 +77,7 @@ export default function UserProfile() {
 
     try {
       setEditLoading(true)
-      const res = await api.put('/auth/profile', {
+      const res = await api.put<{ user: NonNullable<typeof user> }>('/auth/profile', {
         name: editName,
         email: editEmail
       })
@@ -85,13 +86,13 @@ export default function UserProfile() {
       toast.success('Profile updated successfully!')
       setShowEditModal(false)
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile')
+      toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? 'Failed to update profile' : 'Failed to update profile')
     } finally {
       setEditLoading(false)
     }
   }
 
-  const handleChangePassword = async (e) => {
+  const handleChangePassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -122,7 +123,7 @@ export default function UserProfile() {
       setNewPassword('')
       setConfirmPassword('')
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to change password')
+      toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? 'Failed to change password' : 'Failed to change password')
     } finally {
       setPasswordLoading(false)
     }
@@ -156,7 +157,7 @@ export default function UserProfile() {
               👤
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground font-serif">{user?.name || user?.username}</h1>
+              <h1 className="text-3xl font-bold text-foreground font-serif">{user?.name}</h1>
               <p className="text-muted-foreground mt-1">{user?.email}</p>
             </div>
           </div>
@@ -209,7 +210,7 @@ export default function UserProfile() {
           <div className="space-y-6">
             <div>
               <label className="text-sm font-semibold text-muted-foreground">Full Name</label>
-              <p className="text-lg text-foreground mt-1">{user?.name || user?.username}</p>
+              <p className="text-lg text-foreground mt-1">{user?.name}</p>
             </div>
 
             <div>
@@ -224,7 +225,7 @@ export default function UserProfile() {
               <label className="text-sm font-semibold text-muted-foreground">Account Type</label>
               <p className="text-lg text-foreground mt-1">
                 <span className="inline-block px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm font-semibold">
-                  {user?.role === 'admin' ? 'Administrator' : 'Regular User'}
+                  Regular User
                 </span>
               </p>
             </div>

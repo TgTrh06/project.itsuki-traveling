@@ -1,11 +1,12 @@
-// @ts-nocheck
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../../utils/api'
 import ArticleCard from '../../components/ArticleCard'
 import useArticleStore from '../../store/articleStore'
-import JapanMap from '../../components/JapanMap'
+import type { Destination } from "../../types/models";
+
+const JapanMap = lazy(() => import('../../components/JapanMap'))
 
 const pageVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -15,7 +16,7 @@ const pageVariants = {
 
 export default function DestinationDetailPage() {
   const { slug } = useParams()
-  const [destination, setDestination] = useState(null)
+  const [destination, setDestination] = useState<Destination | null>(null)
   const [destLoading, setDestLoading] = useState(false)
   const { articles: storeArticles, page, pages, loading: artLoading, fetchArticles } = useArticleStore()
 
@@ -23,11 +24,10 @@ export default function DestinationDetailPage() {
     const fetchDest = async () => {
       try {
         setDestLoading(true)
-        const res = await api.get(`/destinations/${slug}`)
+        if (!slug) return
+        const res = await api.get<Destination>(`/destinations/${slug}`)
         setDestination(res.data)
         await fetchArticles({ destination: res.data._id, page: 1, limit: 4 })
-      } catch (err) {
-        console.error(err)
       } finally {
         setDestLoading(false)
       }
@@ -35,8 +35,8 @@ export default function DestinationDetailPage() {
     fetchDest()
   }, [slug])
 
-  const gotoPage = (p) => {
-    if (p < 1 || p > pages) return
+  const gotoPage = (p: number) => {
+    if (!destination || p < 1 || p > pages) return
     fetchArticles({ destination: destination._id, page: p, limit: 4 }).catch(() => { })
   }
 
@@ -115,7 +115,9 @@ export default function DestinationDetailPage() {
               className="bg-card rounded-2xl shadow-lg p-6 border border-border"
             >
               <h2 className="text-xl font-bold text-foreground mb-4">{destination.title}</h2>
-              <JapanMap slug={slug} />
+              <Suspense fallback={<div className="h-[600px] grid place-items-center text-muted-foreground">Loading map...</div>}>
+                <JapanMap slug={slug ?? ""} hoveredDestSlug={null} />
+              </Suspense>
             </motion.div>
           </div>
         </div>

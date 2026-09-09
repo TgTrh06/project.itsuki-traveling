@@ -1,5 +1,6 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
+import type { ChangeEvent, FormEvent } from "react";
+import axios from "axios";
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import useAuthStore from '../../store/authStore'
@@ -7,9 +8,13 @@ import useDestinationStore from '../../store/destinationStore'
 import InterestTagInput from '../../components/InterestTagInput'
 import LocationPicker from '../../components/LocationPicker'
 import api from '../../utils/api'
-import apiClient from '../../utils/api'
 import AdminLayout from '../../components/AdminLayout'
 import { MapPin } from 'lucide-react'
+import type { Article, Location } from "../../types/models";
+
+interface ArticleForm { title: string; summary: string; content: string; imageUrl: string; destination: string; interests: string[]; location: { lat: number | null; lng: number | null; address: string } }
+const destinationIdOf = (destination: Article["destination"]) => typeof destination === "object" && destination ? destination._id : destination ?? "";
+const interestIdOf = (interest: NonNullable<Article["interests"]>[number]) => typeof interest === "object" ? interest._id : interest;
 
 const pageVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -23,7 +28,7 @@ export default function ArticleEditPage() {
   const { user } = useAuthStore()
   const { destinations, fetchDestinations } = useDestinationStore()
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ArticleForm>({
     title: '',
     summary: '',
     content: '',
@@ -32,13 +37,13 @@ export default function ArticleEditPage() {
     interests: [],
     location: { lat: null, lng: null, address: '' }
   })
-  const [file, setFile] = useState(null)
+  const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
-  const [fieldErrors, setFieldErrors] = useState({})
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -52,7 +57,8 @@ export default function ArticleEditPage() {
     const fetchArticle = async () => {
       try {
         setFetching(true)
-        const res = await api.get(`/articles/${id}`)
+        if (!id) return
+        const res = await api.get<{ article: Article }>(`/articles/${id}`)
         if (res.data.article) {
           const article = res.data.article
           setFormData({
@@ -60,14 +66,13 @@ export default function ArticleEditPage() {
             summary: article.summary || '',
             content: article.content || '',
             imageUrl: article.imageUrl || '',
-            destination: article.destination?._id || article.destination || '',
-            interests: article.interests || [],
-            location: article.location || { lat: null, lng: null, address: '' }
+            destination: destinationIdOf(article.destination),
+            interests: article.interests?.map(interestIdOf) ?? [],
+            location: article.location ? { lat: article.location.lat ?? null, lng: article.location.lng ?? null, address: article.location.address ?? '' } : { lat: null, lng: null, address: '' }
           })
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load article')
-        console.error(err)
       } finally {
         setFetching(false)
       }
@@ -78,16 +83,16 @@ export default function ArticleEditPage() {
     }
   }, [id])
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleInterestChange = (interests) => {
+  const handleInterestChange = (interests: string[]) => {
     setFormData(prev => ({ ...prev, interests }))
   }
 
-  const handleLocationChange = (loc) => {
+  const handleLocationChange = (loc: Location) => {
     setFormData(prev => ({
       ...prev,
       location: { ...prev.location, lat: loc.lat, lng: loc.lng }
@@ -99,7 +104,7 @@ export default function ArticleEditPage() {
     })
   }
 
-  const handleAddressChange = (e) => {
+  const handleAddressChange = (e: ChangeEvent<HTMLInputElement>) => {
     const address = e.target.value
     setFormData(prev => ({
       ...prev,
@@ -107,14 +112,14 @@ export default function ArticleEditPage() {
     }))
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     setFieldErrors({})
 
     try {
-      const errors = {}
+      const errors: Record<string, string> = {}
       if (!formData.title) errors.title = 'Title is required'
       if (!formData.summary) errors.summary = 'Summary is required'
       if (!formData.content) errors.content = 'Content is required'
@@ -142,7 +147,8 @@ export default function ArticleEditPage() {
       if (file) payload.append('image', file)
       else if (formData.imageUrl) payload.append('imageUrl', formData.imageUrl)
 
-      const res = await apiClient.put(`/articles/${id}/edit`, payload, {
+      if (!id) throw new Error("Missing article id")
+      const res = await api.put<{ success?: boolean }>(`/articles/${id}/edit`, payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => {
           if (!e.total) return
@@ -156,7 +162,7 @@ export default function ArticleEditPage() {
         navigate('/admin/articles')
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update article')
+      setError(axios.isAxiosError<{ message?: string }>(err) ? err.response?.data?.message ?? 'Failed to update article' : 'Failed to update article')
     } finally {
       setLoading(false)
     }
@@ -292,7 +298,7 @@ export default function ArticleEditPage() {
                   {preview || formData.imageUrl ? (
                     <div className="mt-3 w-full h-40 overflow-hidden rounded-lg border border-border">
                       <img
-                        src={preview || (formData.imageUrl && (formData.imageUrl.startsWith('http') ? formData.imageUrl : `${apiClient.defaults.baseURL.replace(/\/api\/?$/, '')}${formData.imageUrl}`))}
+                        src={preview || (formData.imageUrl && (formData.imageUrl.startsWith('http') ? formData.imageUrl : `${(api.defaults.baseURL ?? '').replace(/\/api\/?$/, '')}${formData.imageUrl}`))}
                         alt="preview"
                         className="w-full h-full object-cover"
                       />

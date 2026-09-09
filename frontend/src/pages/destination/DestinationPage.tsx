@@ -1,14 +1,14 @@
-// @ts-nocheck
-import { useEffect, useState } from 'react'
-import JapanMap from '../../components/JapanMap'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import DestinationCard from '../../components/DestinationCard'
 import useDestinationStore from '../../store/destinationStore'
+
+const JapanMap = lazy(() => import('../../components/JapanMap'))
 
 export default function DestinationPage() {
   const { destinations, loading, fetchDestinations } = useDestinationStore()
   const [searchTerm, setSearchTerm] = useState("")
   // Hover state for map interaction
-  const [hoveredDestSlug, setHoveredDestSlug] = useState(null)
+  const [hoveredDestSlug, setHoveredDestSlug] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDestinations({ page: 1, limit: 100 }).catch(() => { })
@@ -30,7 +30,9 @@ export default function DestinationPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 py-8 rounded-xl border border-4 border-border shadow-sm">
         {/* Map Section */}
         <div className="lg:col-span-2">
-          <JapanMap hoveredDestSlug={hoveredDestSlug} />
+          <Suspense fallback={<div className="h-[600px] grid place-items-center text-muted-foreground">Loading map...</div>}>
+            <JapanMap slug="" hoveredDestSlug={hoveredDestSlug} />
+          </Suspense>
         </div>
 
         {/* Sidebar: Search + List */}

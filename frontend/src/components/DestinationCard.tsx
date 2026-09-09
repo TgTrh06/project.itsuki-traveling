@@ -1,7 +1,7 @@
-// @ts-nocheck
 import { Link } from 'react-router-dom'
+import type { Destination } from "../types/models";
 
-export default function DestinationCard({ dest }) {
+export default function DestinationCard({ dest }: { dest: Destination }) {
   return (
     <div className="p-4 bg-card rounded-xl border border-border shadow-sm hover:shadow-lg hover:border-primary transition-all">
       <h3 className="font-semibold text-lg text-primary mb-1">

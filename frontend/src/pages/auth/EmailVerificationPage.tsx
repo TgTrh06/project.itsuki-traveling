@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/authStore";
 import toast from "react-hot-toast";
@@ -10,16 +10,13 @@ const EmailVerificationPage = () => {
 
 	const { error, isLoading, verifyEmail } = useAuthStore();
 
-	const handleSubmit = async (e) => {
-		const verificationCode = code.join("");
+	const handleSubmit = useCallback(async (verificationCode: string) => {
 		try {
 			await verifyEmail(verificationCode);
 			navigate("/");
 			toast.success("Email verified successfully");
-		} catch (error) {
-			console.log(error);
-		}
-	};
+		} catch { /* the store exposes the server message */ }
+	}, [navigate, verifyEmail]);
 
 	const { code, inputRefs, handleChange, handleKeyDown } = useVerificationCode(handleSubmit);
 
@@ -33,14 +30,14 @@ const EmailVerificationPage = () => {
 				</h2>
 				<p className='text-center text-gray-300 mb-6'>Enter the 6-digit code sent to your email address.</p>
 
-				<form onSubmit={handleSubmit} className='space-y-6'>
+				<form onSubmit={(event: FormEvent<HTMLFormElement>) => event.preventDefault()} className='space-y-6'>
 					<div className='flex justify-between'>
 						{code.map((digit, index) => (
 							<input
 								key={index}
-								ref={(el) => (inputRefs.current[index] = el)}
+								ref={(el) => { inputRefs.current[index] = el; }}
 								type='text'
-								maxLength='6'
+								maxLength={1}
 								value={digit}
 								onChange={(e) => handleChange(index, e.target.value)}
 								onKeyDown={(e) => handleKeyDown(index, e)}
@@ -50,8 +47,6 @@ const EmailVerificationPage = () => {
 					</div>
 					{error && <p className='text-red-500 font-semibold mt-2'>{error}</p>}
 					<button
-						whileHover={{ scale: 1.05 }}
-						whileTap={{ scale: 0.95 }}
 						type='submit'
 						disabled={isLoading || code.some((digit) => !digit)}
 						className='w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50'

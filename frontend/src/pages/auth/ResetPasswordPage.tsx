@@ -1,5 +1,6 @@
-// @ts-nocheck
 import { useState } from "react";
+import type { FormEvent } from "react";
+import axios from "axios";
 import useAuthStore from "../../store/authStore";
 import { useNavigate, useParams } from "react-router-dom";
 import Input from "../../components/Input";
@@ -14,11 +15,15 @@ const ResetPasswordPage = () => {
 	const { token } = useParams();
 	const navigate = useNavigate();
 
-	const handleSubmit = async (e) => {
+	const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
 		if (password !== confirmPassword) {
 			alert("Passwords do not match");
+			return;
+		}
+		if (!token) {
+			toast.error("Invalid password reset link");
 			return;
 		}
 		try {
@@ -29,8 +34,7 @@ const ResetPasswordPage = () => {
 				navigate("/auth/login");
 			}, 2000);
 		} catch (error) {
-			console.error(error);
-			toast.error(error.message || "Error resetting password");
+			toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? "Error resetting password" : "Error resetting password");
 		}
 	};
 

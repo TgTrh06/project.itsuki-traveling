@@ -1,8 +1,9 @@
-// @ts-nocheck
 import { motion } from "framer-motion"
 import { Link, useNavigate } from "react-router-dom"
 import { MapPin, Compass, FileText, Calendar } from "lucide-react"
 import { useState } from "react"
+import type { FormEvent } from "react";
+import type { Destination } from "../types/models";
 import useDestinationStore from "../store/destinationStore"
 
 const pageVariants = {
@@ -17,7 +18,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (searchQuery.trim()) {
       const matchedDestination = destinations.find(d => d.title.toLowerCase() === searchQuery.toLowerCase())
@@ -31,14 +32,14 @@ export default function HomePage() {
     }
   }
 
-  const handleCityClick = (city) => {
+  const handleCityClick = (city: string) => {
     const destination = destinations.find(d => d.title.toLowerCase() === city.toLowerCase())
     if (destination) {
       navigate(`/destinations/${destination.slug}`)
     }
   }
 
-  const handleSuggestionClick = (destination) => {
+  const handleSuggestionClick = (destination: Destination) => {
     navigate(`/destinations/${destination.slug}`)
     setSearchQuery("")
     setShowSuggestions(false)

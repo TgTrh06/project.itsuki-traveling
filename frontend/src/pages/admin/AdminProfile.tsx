@@ -1,8 +1,9 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
+import type { FormEvent } from "react";
+import axios from "axios";
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { BarChart3, Users, FileText, Eye, Edit2, Lock, X, Mail, User } from 'lucide-react'
+import { BarChart3, Users, FileText, Eye, Edit2, Lock, X, Mail, User, type LucideIcon } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
 import AdminLayout from '../../components/AdminLayout'
 import api from '../../utils/api'
@@ -14,14 +15,14 @@ const pageVariants = {
   exit: { opacity: 0, y: -20 }
 }
 
-function StatCard({ stat, delay }) {
+type StatColor = "blue" | "green" | "purple" | "orange";
+interface Stat { label: string; value: number; icon: LucideIcon; color: StatColor }
+const colorClasses: Record<StatColor, string> = {
+  blue: 'bg-blue-100 text-blue-600', green: 'bg-green-100 text-green-600', purple: 'bg-purple-100 text-purple-600', orange: 'bg-orange-100 text-orange-600',
+};
+
+function StatCard({ stat, delay }: { stat: Stat; delay: number }) {
   const Icon = stat.icon
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    purple: 'bg-purple-100 text-purple-600',
-    orange: 'bg-orange-100 text-orange-600'
-  }
 
   return (
     <motion.div
@@ -46,7 +47,7 @@ function StatCard({ stat, delay }) {
 export default function AdminProfile() {
   const { user, isAuthenticated, setUser } = useAuthStore()
   const navigate = useNavigate()
-  const [stats, setStats] = useState([])
+  const [stats, setStats] = useState<Stat[]>([])
 
   // Edit Profile Modal
   const [showEditModal, setShowEditModal] = useState(false)
@@ -70,18 +71,18 @@ export default function AdminProfile() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        const userId = user?.id ?? user?._id
+        if (!userId) return
         const [userRes, articleRes] = await Promise.all([
-          api.get('/admin/users/count'),
-          api.get(`/admin/articles/count?authorId=${user._id}`)
+          api.get<{ count?: number }>('/admin/users/count'),
+          api.get<{ count?: number }>(`/admin/articles/count?authorId=${userId}`)
         ])
 
         setStats([
           { label: 'Your Articles', value: articleRes.data.count || 0, icon: FileText, color: 'blue' },
           { label: 'Total Users', value: userRes.data.count || 0, icon: Users, color: 'purple' },
         ])
-      } catch (err) {
-        console.error('Failed to fetch stats:', err)
-      }
+      } catch { /* stats remain available on the next refresh */ }
     }
 
     if (user) {
@@ -97,7 +98,7 @@ export default function AdminProfile() {
     return () => clearInterval(interval)
   }, [user])
 
-  const handleEditProfile = async (e) => {
+  const handleEditProfile = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!editName.trim() || !editEmail.trim()) {
       toast.error('Name and email are required')
@@ -106,7 +107,7 @@ export default function AdminProfile() {
 
     try {
       setEditLoading(true)
-      const res = await api.put('/auth/profile', {
+      const res = await api.put<{ user: NonNullable<typeof user> }>('/auth/profile', {
         name: editName,
         email: editEmail
       })
@@ -115,13 +116,13 @@ export default function AdminProfile() {
       toast.success('Profile updated successfully!')
       setShowEditModal(false)
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile')
+      toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? 'Failed to update profile' : 'Failed to update profile')
     } finally {
       setEditLoading(false)
     }
   }
 
-  const handleChangePassword = async (e) => {
+  const handleChangePassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -152,7 +153,7 @@ export default function AdminProfile() {
       setNewPassword('')
       setConfirmPassword('')
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to change password')
+      toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? 'Failed to change password' : 'Failed to change password')
     } finally {
       setPasswordLoading(false)
     }
@@ -168,7 +169,7 @@ export default function AdminProfile() {
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-foreground font-serif">Overview</h1>
-            <p className="text-sm text-muted-foreground">Welcome back, {user?.name || user?.username}</p>
+            <p className="text-sm text-muted-foreground">Welcome back, {user?.name}</p>
           </div>
           <div className="flex gap-2">
             <button

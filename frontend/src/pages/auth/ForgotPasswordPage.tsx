@@ -1,10 +1,9 @@
-// @ts-nocheck
 import { useState } from "react"
+import type { FormEvent } from "react";
 import { Link } from "react-router-dom"
 import { Mail, Loader, ArrowLeft } from "lucide-react"
 import { motion } from "framer-motion"
 import useAuthStore from "../../store/authStore"
-import Input from "../../components/Input"
 
 const pageVariants = {
 	hidden: { opacity: 0, y: 20 },
@@ -17,7 +16,7 @@ export default function ForgotPasswordPage() {
 	const [isSubmitted, setIsSubmitted] = useState(false)
 	const { isLoading, forgotPassword } = useAuthStore()
 
-	const handleSubmit = async (e) => {
+	const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 		await forgotPassword(email)
 		setIsSubmitted(true)

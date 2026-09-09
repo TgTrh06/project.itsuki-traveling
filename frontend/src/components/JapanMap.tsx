@@ -1,17 +1,20 @@
-// @ts-nocheck
-import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
+import { useLayoutEffect, useState, useRef, useEffect } from "react";
 import * as am5 from "@amcharts/amcharts5";
 import * as am5map from "@amcharts/amcharts5/map";
 import am5geodata_japanLow from "@amcharts/amcharts5-geodata/japanLow";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-export default function JapanMap({ slug, hoveredDestSlug }) {
+type RegionData = { name?: string };
+const regionNameOf = (polygon: am5map.MapPolygon) =>
+  (polygon.dataItem?.dataContext as RegionData | undefined)?.name ?? "";
+
+export default function JapanMap({ slug, hoveredDestSlug }: { slug: string; hoveredDestSlug: string | null }) {
   const navigate = useNavigate();
   // State to track the currently selected polygon
-  const [selectedPolygon, setSelectedPolygon] = useState(null);
-  const polygonSeriesRef = useRef(null);
-  const polygonsMapRef = useRef({});
+  const [selectedPolygon, setSelectedPolygon] = useState<am5map.MapPolygon | null>(null);
+  const polygonSeriesRef = useRef<am5map.MapPolygonSeries | null>(null);
+  const polygonsMapRef = useRef<Record<string, am5map.MapPolygon>>({});
 
   useLayoutEffect(() => {
     const root = am5.Root.new("japanMapDiv");
@@ -49,7 +52,7 @@ export default function JapanMap({ slug, hoveredDestSlug }) {
     // Tô màu vùng được chọn
     polygonSeries.events.on("datavalidated", () => {
       polygonSeries.mapPolygons.each((polygon) => {
-        const name = polygon.dataItem.dataContext.name.toLowerCase().replace(/\s+/g, "-");
+        const name = regionNameOf(polygon).toLowerCase().replace(/\s+/g, "-");
         polygonsMapRef.current[name] = polygon;
         if (name === slug) {
           polygon.set("fill", am5.color(0x16a34a));
@@ -69,7 +72,7 @@ export default function JapanMap({ slug, hoveredDestSlug }) {
 
     // Click để điều hướng
     polygonSeries.mapPolygons.template.events.on("click", function (ev) {
-      const regionName = ev.target.dataItem.dataContext.name;
+      const regionName = regionNameOf(ev.target);
       const regionSlug = regionName.toLowerCase().replace(/\s+/g, "-");
       navigate(`/destinations/${regionSlug}`);
     });

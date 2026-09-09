@@ -1,17 +1,23 @@
-// @ts-nocheck
 import { Link, useNavigate } from 'react-router-dom'
+import axios from "axios";
 import api from '../utils/api'
 import useAuthStore from '../store/authStore'
 import useArticleStore from '../store/articleStore'
 import toast from 'react-hot-toast'
+import type { Article } from "../types/models";
 
-export default function ArticleCard({ article }) {
+const destinationSlugOf = (destination: Article["destination"]) =>
+  typeof destination === "object" && destination ? destination.slug : "";
+const authorNameOf = (author: Article["author"]) =>
+  typeof author === "object" && author ? author.name : "";
+
+export default function ArticleCard({ article }: { article: Article }) {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const deleteArticle = useArticleStore((state) => state.deleteArticle)
-  const destinationSlug = article.destination?.slug || "";
+  const destinationSlug = destinationSlugOf(article.destination);
 
-  const handleDelete = async (articleId, articleTitle) => {
+  const handleDelete = async (articleId: string, articleTitle: string) => {
     // Hỏi người dùng xác nhận trước khi xóa
     if (!window.confirm(`Bạn có chắc chắn muốn xóa bài viết "${articleTitle}"?`)) {
       return // Dừng nếu người dùng hủy
@@ -24,7 +30,7 @@ export default function ArticleCard({ article }) {
 
       navigate('/admin/articles')
     } catch (error) {
-      toast.error(error.message || 'Lỗi khi xóa bài viết.')
+      toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? 'Lỗi khi xóa bài viết.' : 'Lỗi khi xóa bài viết.')
     }
   }
 
@@ -35,7 +41,7 @@ export default function ArticleCard({ article }) {
         <img
           src={
             article.imageUrl
-              ? (article.imageUrl.startsWith('http') ? article.imageUrl : `${api.defaults.baseURL.replace(/\/api\/?$/, '')}${article.imageUrl}`)
+              ? (article.imageUrl.startsWith('http') ? article.imageUrl : `${(api.defaults.baseURL ?? "").replace(/\/api\/?$/, '')}${article.imageUrl}`)
               : "/images/default-article.jpg"
           }
           alt={article.title}
@@ -47,7 +53,7 @@ export default function ArticleCard({ article }) {
       <div className="md:w-9/12 w-full p-4 flex flex-col justify-between">
         <div>
           <h3 className="text-xl font-bold text-primary mb-1">{article.title}</h3>
-          <p className="text-sm text-muted-foreground mb-2">By {article.author?.name}</p>
+          <p className="text-sm text-muted-foreground mb-2">By {authorNameOf(article.author)}</p>
           <p className="text-foreground text-sm line-clamp-3">
             {article.summary || article.description}
           </p>

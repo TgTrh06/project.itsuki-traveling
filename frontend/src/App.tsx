@@ -1,4 +1,4 @@
-// @ts-nocheck
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -7,12 +7,13 @@ import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
 import AuthRoutes from './routes/AuthRoutes'
 import InterestsListPage from './pages/interest/InterestsListPage'
-import PlanningPage from './pages/PlanningPage'
 import UserProfile from './pages/user/UserProfile'
-import AdminRoutes from './routes/AdminRoutes'
 import DestinationRoutes from './routes/DestinationRoutes'
 import ArticleRoutes from './routes/ArticleRoutes'
 import ProtectedRoute from './components/ProtectedRoute'
+
+const PlanningPage = lazy(() => import('./pages/PlanningPage'))
+const AdminRoutes = lazy(() => import('./routes/AdminRoutes'))
 
 function App() {
 	return (
@@ -31,6 +32,7 @@ function App() {
 				theme="dark"
 			/>
 			<main className="flex-1">
+				<Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
 				<Routes>
 					<Route path="/" element={<HomePage />} />
 
@@ -55,6 +57,7 @@ function App() {
 
 					<Route path="/interests/:slug" element={<InterestsListPage />} />
 				</Routes>
+				</Suspense>
 			</main>
 			<Footer />
 		</div>

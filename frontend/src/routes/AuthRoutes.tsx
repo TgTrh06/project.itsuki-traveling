@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Routes, Route } from "react-router-dom";
 import LoginPage from '../pages/auth/LoginPage'
 import SignUpPage from '../pages/auth/SignUpPage'

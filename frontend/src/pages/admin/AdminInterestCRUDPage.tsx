@@ -1,24 +1,27 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
+import type { FormEvent } from "react";
+import axios from "axios";
 import api from '../../utils/api'
 import { Trash2, Edit2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import AdminLayout from '../../components/AdminLayout'
+import type { Interest } from "../../types/models";
+
+type InterestForm = Pick<Interest, "title" | "slug">;
 
 export default function AdminInterestCRUDPage() {
-    const [interests, setInterests] = useState([])
+    const [interests, setInterests] = useState<Interest[]>([])
     const [loading, setLoading] = useState(false)
-    const [editingId, setEditingId] = useState(null)
-    const [formData, setFormData] = useState({ title: '', slug: '' })
-    const [errors, setErrors] = useState({})
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [formData, setFormData] = useState<InterestForm>({ title: '', slug: '' })
+    const [errors, setErrors] = useState<Partial<InterestForm>>({})
 
     const fetchInterests = async () => {
         setLoading(true)
         try {
-            const res = await api.get('/interests')
+            const res = await api.get<Interest[]>('/interests')
             setInterests(res.data || [])
-        } catch (err) {
-            console.error(err)
+        } catch {
             toast.error('Failed to load interests')
         } finally {
             setLoading(false)
@@ -30,14 +33,14 @@ export default function AdminInterestCRUDPage() {
     }, [])
 
     const validateForm = () => {
-        const newErrors = {}
+        const newErrors: Partial<InterestForm> = {}
         if (!formData.title.trim()) newErrors.title = 'Title is required'
         if (!formData.slug.trim()) newErrors.slug = 'Slug is required'
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (!validateForm()) return
 
@@ -54,24 +57,24 @@ export default function AdminInterestCRUDPage() {
             setErrors({})
             fetchInterests()
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to save interest')
+            toast.error(axios.isAxiosError<{ message?: string }>(err) ? err.response?.data?.message ?? 'Failed to save interest' : 'Failed to save interest')
         }
     }
 
-    const handleEdit = (interest) => {
+    const handleEdit = (interest: Interest) => {
         setEditingId(interest._id)
         setFormData({ title: interest.title, slug: interest.slug })
         setErrors({})
     }
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: string) => {
         if (!window.confirm('Delete this interest?')) return
         try {
             await api.delete(`/interests/${id}`)
             toast.success('Interest deleted')
             fetchInterests()
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to delete interest')
+            toast.error(axios.isAxiosError<{ message?: string }>(err) ? err.response?.data?.message ?? 'Failed to delete interest' : 'Failed to delete interest')
         }
     }
 

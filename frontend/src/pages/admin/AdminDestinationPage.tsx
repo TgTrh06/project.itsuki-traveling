@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect } from 'react'
 import AdminLayout from '../../components/AdminLayout'
 import useDestinationStore from '../../store/destinationStore'

@@ -1,5 +1,6 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
+import type { FormEvent } from "react";
+import axios from "axios";
 import { Link, useParams } from 'react-router-dom'
 import useArticleStore from '../../store/articleStore'
 import apiClient from '../../utils/api'
@@ -11,6 +12,11 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
+import type { Article, User } from "../../types/models";
+
+const destinationIdOf = (destination: Article["destination"]) => typeof destination === "object" && destination ? destination._id : destination ?? "";
+const destinationSlugOf = (destination: Article["destination"]) => typeof destination === "object" && destination ? destination.slug : "";
+const userNameOf = (user: User | string | undefined) => typeof user === "object" && user ? user.name : "";
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
@@ -26,9 +32,9 @@ export default function ArticleDetailPage() {
   const { user } = useAuthStore()
   const { addItem, plannedItems } = usePlanStore()
 
-  const [article, setArticle] = useState(null)
+  const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(false)
-  const [nearbyArticles, setNearbyArticles] = useState([])
+  const [nearbyArticles, setNearbyArticles] = useState<Article[]>([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
 
   const [commentContent, setCommentContent] = useState('')
@@ -41,6 +47,7 @@ export default function ArticleDetailPage() {
     const fetch = async () => {
       try {
         setLoading(true)
+        if (!city || !slug) return
         const { article: fetchedArticle } = await getArticleBySlug(city, slug)
         setArticle(fetchedArticle)
 
@@ -51,23 +58,16 @@ export default function ArticleDetailPage() {
           try {
             setNearbyLoading(true)
             // Pass destination id or slug (prefer id if populated)
-            const destParam = fetchedArticle.destination?._id || fetchedArticle.destination || ''
+            const destParam = destinationIdOf(fetchedArticle.destination)
             const nearbyRes = await fetchArticles({ destination: destParam, limit: 3 })
-            // fetchArticles returns an object: { data, total, page, pages }
-            const nearbyList = (nearbyRes && (nearbyRes.data || nearbyRes.data === null)) ? nearbyRes.data : nearbyRes.data || nearbyRes.data
-            // Normalize to array (defensive)
-            const arr = Array.isArray(nearbyList) ? nearbyList : (nearbyRes?.data || nearbyRes?.data?.data || [])
-            const filtered = arr.filter(a => a._id !== fetchedArticle._id).slice(0, 2)
+            const filtered = nearbyRes.data.filter((entry) => entry._id !== fetchedArticle._id).slice(0, 2)
             setNearbyArticles(filtered)
-          } catch (err) {
-            console.error('Error fetching nearby articles:', err)
+          } catch {
             setNearbyArticles([])
           } finally {
             setNearbyLoading(false)
           }
         }
-      } catch (err) {
-        console.error(err)
       } finally {
         setLoading(false)
       }
@@ -75,7 +75,7 @@ export default function ArticleDetailPage() {
     fetch()
   }, [city, slug, getArticleBySlug, fetchComments, fetchArticles])
 
-  const handleCommentSubmit = async (e) => {
+  const handleCommentSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!user) {
       toast.error("Login to leave a comment")
@@ -86,12 +86,13 @@ export default function ArticleDetailPage() {
       return
     }
 
+    if (!article) return
     try {
       await addComment(article._id, commentContent.trim())
       setCommentContent('')
       toast.success("Comment added successfully")
     } catch (error) {
-      toast.error(error.message || "Error in comment.")
+      toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? "Error in comment." : "Error in comment.")
     }
   }
 
@@ -103,25 +104,27 @@ export default function ArticleDetailPage() {
     if (isLiking) return;
 
     // Optimistic update
-    const userId = user._id;
+    if (!article) return;
+    const userId = user.id ?? user._id;
+    if (!userId) return;
     const currentLikes = article.meta?.likes || [];
-    const isCurrentlyLiked = currentLikes.some(id => String(id) === String(userId));
+    const isCurrentlyLiked = currentLikes.some((id: string) => String(id) === String(userId));
 
-    let newLikesArray;
+    let newLikesArray: string[];
     if (isCurrentlyLiked) {
-      newLikesArray = currentLikes.filter(id => String(id) !== String(userId));
+      newLikesArray = currentLikes.filter((id: string) => String(id) !== String(userId));
     } else {
       newLikesArray = [...currentLikes, userId];
     }
 
     // Update UI immediately
-    setArticle((prev) => ({
+    setArticle((prev) => prev ? ({
       ...prev,
       meta: {
         ...prev.meta,
         likes: newLikesArray
       }
-    }));
+    }) : prev);
 
     setIsLiking(true);
     try {
@@ -133,14 +136,14 @@ export default function ArticleDetailPage() {
       }
     } catch (error) {
       // Revert if error
-      setArticle((prev) => ({
+      setArticle((prev) => prev ? ({
         ...prev,
         meta: {
           ...prev.meta,
           likes: currentLikes
         }
-      }));
-      toast.error(error.message || "Error in like article.");
+      }) : prev);
+      toast.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? "Error in like article." : "Error in like article.");
     } finally {
       setIsLiking(false);
     }
@@ -173,11 +176,11 @@ export default function ArticleDetailPage() {
             <h1 className="text-4xl font-bold mb-3 text-foreground font-serif">{article.title}</h1>
 
             <p className="text-sm text-muted-foreground mb-2">
-              {new Date(article.createdAt).toLocaleDateString('en-US', {
+              {article.createdAt ? new Date(article.createdAt).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
-              })} • {article.readTime || '6'} min read
+              }) : '—'} • {article.readTime || '6'} min read
             </p>
 
             {/* Author Info + Add to Plan in single row */}
@@ -185,11 +188,11 @@ export default function ArticleDetailPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
                   <span className="text-muted-foreground font-semibold">
-                    {article.author?.name?.charAt(0) || 'A'}
+                    {userNameOf(article.author).charAt(0) || 'A'}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">By {article.author?.name}</p>
+                  <p className="text-sm font-medium text-foreground">By {userNameOf(article.author)}</p>
                   <p className="text-xs text-muted-foreground">Community writer</p>
                 </div>
               </div>
@@ -216,7 +219,7 @@ export default function ArticleDetailPage() {
           {article.imageUrl && (
             <div className="mb-4 w-full h-[360px] overflow-hidden rounded-xl border border-border">
               <img
-                src={article.imageUrl.startsWith('http') ? article.imageUrl : `${apiClient.defaults.baseURL.replace(/\/api\/?$/, '')}${article.imageUrl}`}
+                src={article.imageUrl.startsWith('http') ? article.imageUrl : `${(apiClient.defaults.baseURL ?? '').replace(/\/api\/?$/, '')}${article.imageUrl}`}
                 alt={article.title}
                 className="w-full h-full object-cover"
               />
@@ -226,7 +229,7 @@ export default function ArticleDetailPage() {
           {/* Article Content */}
           <div
             className="prose prose-lg max-w-none text-foreground mb-8 font-serif"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            dangerouslySetInnerHTML={{ __html: article.content ?? "" }}
           />
 
           {/* LIKE & COMMENT COUNT SECTION */}
@@ -268,7 +271,7 @@ export default function ArticleDetailPage() {
               <form onSubmit={handleCommentSubmit}>
                 <textarea
                   className="w-full p-4 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring focus:border-ring resize-none"
-                  rows="4"
+                  rows={4}
                   placeholder="Share your thoughts..."
                   value={commentContent}
                   onChange={(e) => setCommentContent(e.target.value)}
@@ -304,13 +307,13 @@ export default function ArticleDetailPage() {
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
                         <span className="text-accent-foreground font-semibold text-sm">
-                          {c.user?.name?.charAt(0) || 'U'}
+                          {userNameOf(c.user).charAt(0) || 'U'}
                         </span>
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">{c.user?.name}</p>
+                        <p className="text-sm font-semibold text-foreground">{userNameOf(c.user)}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(c.createdAt).toLocaleDateString()}
+                          {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
                         </p>
                       </div>
                     </div>
@@ -381,7 +384,7 @@ export default function ArticleDetailPage() {
                   {nearbyArticles.map((nearby) => (
                     <Link
                       key={nearby._id}
-                      to={`/articles/${nearby.destination?.slug || city}/${nearby.slug}`}
+                      to={`/articles/${destinationSlugOf(nearby.destination) || city}/${nearby.slug}`}
                       className="flex gap-3 hover:opacity-80 transition-opacity"
                     >
                       <div className="w-20 h-20 bg-muted rounded flex-shrink-0 overflow-hidden">
@@ -399,7 +402,7 @@ export default function ArticleDetailPage() {
                         <h4 className="font-semibold text-sm text-foreground mb-1 line-clamp-2">
                           {nearby.title}
                         </h4>
-                        <p className="text-xs text-muted-foreground">By {nearby.author?.name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">By {userNameOf(nearby.author) || 'Unknown'}</p>
                       </div>
                     </Link>
                   ))}

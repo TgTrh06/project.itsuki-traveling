@@ -1,20 +1,18 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import api from '../../utils/api'
 import { Download, Tag } from 'lucide-react'
 import AdminLayout from '../../components/AdminLayout'
+import type { Interest } from "../../types/models";
 
 export default function AdminInterestsPage() {
-    const [interests, setInterests] = useState([])
+    const [interests, setInterests] = useState<Interest[]>([])
     const [loading, setLoading] = useState(false)
 
     const fetchInterests = async () => {
         setLoading(true)
         try {
-            const res = await api.get('/admin/interests')
+            const res = await api.get<Interest[]>('/admin/interests')
             setInterests(res.data || [])
-        } catch (err) {
-            console.error(err)
         } finally {
             setLoading(false)
         }

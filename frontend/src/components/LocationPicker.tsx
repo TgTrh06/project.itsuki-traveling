@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
@@ -14,7 +13,10 @@ let DefaultIcon = L.icon({
 })
 L.Marker.prototype.options.icon = DefaultIcon
 
-function MapEvents({ onLocationSelect }) {
+import type { LatLng, LatLngTuple } from "leaflet";
+import type { Location } from "../types/models";
+
+function MapEvents({ onLocationSelect }: { onLocationSelect: (latlng: LatLng) => void }) {
     useMapEvents({
         click(e) {
             onLocationSelect(e.latlng)
@@ -23,16 +25,18 @@ function MapEvents({ onLocationSelect }) {
     return null
 }
 
-export default function LocationPicker({ location, onLocationChange }) {
-    const [position, setPosition] = useState(null)
+type LocationValue = { lat?: number | null; lng?: number | null; address?: string };
+
+export default function LocationPicker({ location, onLocationChange }: { location?: LocationValue | null; onLocationChange: (location: Location) => void }) {
+    const [position, setPosition] = useState<LatLngTuple | null>(null)
 
     useEffect(() => {
-        if (location && location.lat && location.lng) {
+        if (location && typeof location.lat === "number" && typeof location.lng === "number") {
             setPosition([location.lat, location.lng])
         }
     }, [location])
 
-    const handleLocationSelect = (latlng) => {
+    const handleLocationSelect = (latlng: LatLng) => {
         setPosition([latlng.lat, latlng.lng])
         onLocationChange({ lat: latlng.lat, lng: latlng.lng })
     }

@@ -1,5 +1,8 @@
-// @ts-nocheck
-const Input = ({ icon: Icon, ...props }) => {
+import type { ComponentType, InputHTMLAttributes } from "react";
+
+type InputProps = InputHTMLAttributes<HTMLInputElement> & { icon: ComponentType<{ className?: string }> };
+
+const Input = ({ icon: Icon, ...props }: InputProps) => {
 	return (
 		<div className='relative mb-6'>
 			<div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>

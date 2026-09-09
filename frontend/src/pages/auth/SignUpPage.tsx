@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom"
 import { Mail, Lock, User, Loader } from "lucide-react"
 import { motion } from "framer-motion"
@@ -16,12 +16,12 @@ export default function SignUpPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [errors, setErrors] = useState({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const navigate = useNavigate()
   const { signup, error, isLoading } = useAuthStore()
 
   // Validate form fields in real-time
-  const validateField = (field, value) => {
+  const validateField = (field: "name" | "email" | "password", value: string) => {
     const newErrors = { ...errors }
     
     if (field === 'name') {
@@ -64,7 +64,7 @@ export default function SignUpPage() {
     setErrors(newErrors)
   }
 
-  const handleSignUp = async (e) => {
+  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
     // Validate all fields before submit
@@ -79,9 +79,7 @@ export default function SignUpPage() {
     try {
       await signup(name, email, password)
       navigate("/")
-    } catch (err) {
-      console.error(err)
-    }
+    } catch { /* the store exposes the server message */ }
   }
 
   return (

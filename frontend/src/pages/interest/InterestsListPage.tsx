@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -21,9 +20,9 @@ export default function InterestsListPage() {
     }
   }, [slug])
 
-  const gotoPage = (p) => {
+  const gotoPage = (p: number) => {
     if (p < 1 || p > pages) return
-    fetchArticlesByInterest(slug, { page: p, limit: 10 }).catch(() => {})
+    if (slug) fetchArticlesByInterest(slug, { page: p, limit: 10 }).catch(() => {})
   }
 
   return (

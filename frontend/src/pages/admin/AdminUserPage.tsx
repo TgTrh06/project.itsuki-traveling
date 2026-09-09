@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect } from 'react'
 import AdminLayout from '../../components/AdminLayout'
 import useUserStore from '../../store/userStore' // giả sử bạn có store này
@@ -19,7 +18,7 @@ export default function AdminUserPage() {
         <ul className="space-y-2 text-sm text-gray-700">
           {users.map((u) => (
             <li key={u._id} className="border-b py-2">
-              {u.name || u.username} – {u.email}
+              {u.name} – {u.email}
             </li>
           ))}
         </ul>
