@@ -1,139 +1,75 @@
-// @ts-nocheck
-import { create } from 'zustand'
-import api from '../utils/api'
+import axios from "axios";
+import { create } from "zustand";
+import api from "../utils/api";
+import type { ApiErrorResponse, Article } from "../types/models";
 
-const useArticleStore = create((set, get) => ({
-  articles: [],
-  total: 0,
-  page: 1,
-  pages: 1,
-  limit: 10,
-  loading: false,
-  error: null,
+interface ArticleListResponse { data: Article[]; total: number; page: number; pages: number }
+interface ArticleResponse { article: Article }
+interface ArticleDetailResponse { article: Article; comments: unknown[] }
+interface ArticleQuery { page?: number; limit?: number; destination?: string; author?: string; interest?: string; sort?: "views" }
+interface ArticleStore {
+  articles: Article[]; total: number; page: number; pages: number; limit: number; loading: boolean; error: string | null;
+  fetchArticles: (query?: ArticleQuery) => Promise<ArticleListResponse>;
+  fetchTopArticles: (limit?: number) => Promise<Article[]>;
+  getArticleBySlug: (city: string, slug: string) => Promise<ArticleDetailResponse>;
+  createArticle: (articleData: FormData | Partial<Article>) => Promise<Article>;
+  updateArticle: (id: string, updatedData: FormData | Partial<Article>) => Promise<Article>;
+  deleteArticle: (id: string) => Promise<void>;
+  getArticleById: (id: string) => Promise<Article>;
+  likeArticle: (articleId: string) => Promise<number>;
+}
 
-  // Lấy danh sách bài viết
+const errorMessage = (error: unknown, fallback: string) =>
+  axios.isAxiosError<ApiErrorResponse>(error) ? error.response?.data?.message ?? fallback : fallback;
+
+const useArticleStore = create<ArticleStore>((set) => ({
+  articles: [], total: 0, page: 1, pages: 1, limit: 10, loading: false, error: null,
   fetchArticles: async ({ page = 1, limit = 10, destination, author, interest, sort } = {}) => {
-    set({ loading: true, error: null })
+    set({ loading: true, error: null });
     try {
-      const q = []
-      if (destination) q.push(`destination=${destination}`)
-      if (author) q.push(`author=${author}`)
-      if (interest) q.push(`interest=${interest}`)
-      if (sort) q.push(`sort=${sort}`)
-      q.push(`page=${page}`)
-      q.push(`limit=${limit}`)
-      const query = q.length ? `?${q.join('&')}` : ''
-      const res = await api.get(`/articles${query}`)
-      const { data, total, page: p, pages } = res.data
-      set({ articles: data, total, page: p, pages, limit, loading: false })
-      return res.data
-    } catch (err) {
-      set({ error: err, loading: false })
-      throw err
-    }
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (destination) params.set("destination", destination);
+      if (author) params.set("author", author);
+      if (interest) params.set("interest", interest);
+      if (sort) params.set("sort", sort);
+      const response = await api.get<ArticleListResponse>(`/articles?${params.toString()}`);
+      const data = response.data;
+      set({ articles: data.data, total: data.total, page: data.page, pages: data.pages, limit, loading: false });
+      return data;
+    } catch (error) { set({ error: errorMessage(error, "Failed to fetch articles"), loading: false }); throw error; }
   },
-
-  // Lấy top bài viết (views)
   fetchTopArticles: async (limit = 10) => {
-    try {
-      const res = await api.get(`/articles?sort=views&limit=${limit}`)
-      return res.data.data
-    } catch (err) {
-      console.error("Failed to fetch top articles", err)
-      return []
-    }
+    try { const response = await api.get<ArticleListResponse>(`/articles?sort=views&limit=${limit}`); return response.data.data; }
+    catch { return []; }
   },
-
-  getArticleBySlug: async (city, slug) => {
-    try {
-      const res = await api.get(`/articles/${city}/${slug}`)
-      return res.data // { article, comments }
-    } catch (err) {
-      throw err
-    }
-  },
-
-  // Tạo bài viết mới
+  getArticleBySlug: async (city, slug) => (await api.get<ArticleDetailResponse>(`/articles/${city}/${slug}`)).data,
   createArticle: async (articleData) => {
-    set({ loading: true, error: null })
-    try {
-      const res = await api.post('/articles', articleData)
-      const newArticle = res.data.article
-      set((state) => ({
-        articles: [newArticle, ...state.articles],
-        loading: false
-      }))
-      return newArticle
-    } catch (err) {
-      set({ error: err.response?.data?.message || 'Failed to create article', loading: false })
-      throw err
-    }
+    set({ loading: true, error: null });
+    try { const response = await api.post<ArticleResponse>("/articles", articleData); const article = response.data.article; set((state) => ({ articles: [article, ...state.articles], loading: false })); return article; }
+    catch (error) { set({ error: errorMessage(error, "Failed to create article"), loading: false }); throw error; }
   },
-
-  // Cập nhật bài viết
   updateArticle: async (id, updatedData) => {
-    set({ loading: true, error: null })
-    try {
-      const res = await api.put(`/articles/${id}/edit`, updatedData)
-      const updated = res.data.article
-      set((state) => ({
-        articles: state.articles.map((a) => (a._id === id ? updated : a)),
-        loading: false
-      }))
-      return updated
-    } catch (err) {
-      set({ error: err.response?.data?.message || 'Failed to update article', loading: false })
-      throw err
-    }
+    set({ loading: true, error: null });
+    try { const response = await api.put<ArticleResponse>(`/articles/${id}/edit`, updatedData); const article = response.data.article; set((state) => ({ articles: state.articles.map((entry) => entry._id === id ? article : entry), loading: false })); return article; }
+    catch (error) { set({ error: errorMessage(error, "Failed to update article"), loading: false }); throw error; }
   },
-
-  // Xóa bài viết
   deleteArticle: async (id) => {
-    set({ loading: true, error: null })
-    try {
-      await api.delete(`/articles/${id}`)
-      set((state) => ({
-        articles: state.articles.filter((a) => a._id !== id),
-        loading: false
-      }))
-    } catch (err) {
-      set({ error: err.response?.data?.message || 'Failed to delete article', loading: false })
-      throw err
-    }
+    set({ loading: true, error: null });
+    try { await api.delete(`/articles/${id}`); set((state) => ({ articles: state.articles.filter((article) => article._id !== id), loading: false })); }
+    catch (error) { set({ error: errorMessage(error, "Failed to delete article"), loading: false }); throw error; }
   },
-
-  // Lấy chi tiết một bài viết
   getArticleById: async (id) => {
-    set({ loading: true, error: null })
-    try {
-      const res = await api.get(`/articles/${id}`)
-      set({ loading: false })
-      return res.data.article
-    } catch (err) {
-      set({ error: err.response?.data?.message || 'Failed to fetch article', loading: false })
-      throw err
-    }
+    set({ loading: true, error: null });
+    try { const response = await api.get<ArticleResponse>(`/articles/${id}`); set({ loading: false }); return response.data.article; }
+    catch (error) { set({ error: errorMessage(error, "Failed to fetch article"), loading: false }); throw error; }
   },
-  // Toggle Like Article
   likeArticle: async (articleId) => {
     try {
-      // Gọi API toggle like
-      const res = await api.post(`/articles/${articleId}/like`)
-
-      // Cập nhật số lượng likes trong state articles (Tùy chọn)
-      set((state) => ({
-        articles: state.articles.map((a) =>
-          a._id === articleId
-            ? { ...a, meta: { ...a.meta, likesCount: res.data.likesCount } }
-            : a
-        ),
-      }))
-      return res.data.likesCount
-    } catch (err) {
-      console.error(err);
-      throw err
-    }
+      const response = await api.post<{ likesCount: number }>(`/articles/${articleId}/like`);
+      set((state) => ({ articles: state.articles.map((article) => article._id === articleId ? { ...article, meta: { ...article.meta, likesCount: response.data.likesCount } } : article) }));
+      return response.data.likesCount;
+    } catch (error) { throw error; }
   },
-}))
+}));
 
-export default useArticleStore
+export default useArticleStore;

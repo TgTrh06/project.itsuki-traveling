@@ -1,70 +1,39 @@
-// @ts-nocheck
-import { create } from 'zustand'
-import api from '../utils/api'
+import axios from "axios";
+import { create } from "zustand";
+import api from "../utils/api";
+import type { ApiErrorResponse, User } from "../types/models";
 
-const useUserStore = create((set) => ({
-  users: [],
-  userCount: 0,
-  loading: false,
-  error: null,
+interface UserStore {
+  users: User[]; userCount: number; loading: boolean; error: string | null;
+  fetchUsers: () => Promise<void>;
+  fetchUserCount: () => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  updateUser: (id: string, data: Partial<Pick<User, "name" | "email" | "role">>) => Promise<void>;
+}
 
-  // Lấy danh sách người dùng
+const errorMessage = (error: unknown, fallback: string) => axios.isAxiosError<ApiErrorResponse>(error) ? error.response?.data?.message ?? fallback : fallback;
+
+const useUserStore = create<UserStore>((set) => ({
+  users: [], userCount: 0, loading: false, error: null,
   fetchUsers: async () => {
-    set({ loading: true, error: null })
-    try {
-      const res = await api.get('/admin/users')
-      set({ users: res.data.users || [], loading: false })
-    } catch (err) {
-      set({
-        error: err.response?.data?.message || 'Failed to fetch users',
-        loading: false,
-      })
-    }
+    set({ loading: true, error: null });
+    try { const response = await api.get<{ users?: User[] }>("/admin/users"); set({ users: response.data.users ?? [], loading: false }); }
+    catch (error) { set({ error: errorMessage(error, "Failed to fetch users"), loading: false }); }
   },
-
-  // Lấy tổng số người dùng
   fetchUserCount: async () => {
-    try {
-      const res = await api.get('/admin/users/count')
-      set({ userCount: res.data.count || 0 })
-    } catch (err) {
-      console.error('Failed to fetch user count:', err)
-    }
+    try { const response = await api.get<{ count?: number }>("/admin/users/count"); set({ userCount: response.data.count ?? 0 }); }
+    catch { /* a counter failure does not invalidate the current list */ }
   },
-
-  // Xóa người dùng
   deleteUser: async (id) => {
-    set({ loading: true, error: null })
-    try {
-      await api.delete(`/admin/users/${id}`)
-      set((state) => ({
-        users: state.users.filter((u) => u._id !== id),
-        loading: false,
-      }))
-    } catch (err) {
-      set({
-        error: err.response?.data?.message || 'Failed to delete user',
-        loading: false,
-      })
-    }
+    set({ loading: true, error: null });
+    try { await api.delete(`/admin/users/${id}`); set((state) => ({ users: state.users.filter((user) => user._id !== id && user.id !== id), loading: false })); }
+    catch (error) { set({ error: errorMessage(error, "Failed to delete user"), loading: false }); }
   },
-
-  // Cập nhật người dùng
   updateUser: async (id, data) => {
-    set({ loading: true, error: null })
-    try {
-      const res = await api.put(`/admin/users/${id}`, data)
-      set((state) => ({
-        users: state.users.map((u) => (u._id === id ? res.data.user : u)),
-        loading: false,
-      }))
-    } catch (err) {
-      set({
-        error: err.response?.data?.message || 'Failed to update user',
-        loading: false,
-      })
-    }
+    set({ loading: true, error: null });
+    try { const response = await api.put<{ user: User }>(`/admin/users/${id}`, data); set((state) => ({ users: state.users.map((user) => user._id === id || user.id === id ? response.data.user : user), loading: false })); }
+    catch (error) { set({ error: errorMessage(error, "Failed to update user"), loading: false }); }
   },
-}))
+}));
 
 export default useUserStore;

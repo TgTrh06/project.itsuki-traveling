@@ -1,62 +1,34 @@
-// @ts-nocheck
-// store/commentStore.js
+import axios from "axios";
+import { create } from "zustand";
+import api from "../utils/api";
+import type { ApiErrorResponse, Comment } from "../types/models";
 
-import { create } from 'zustand'
-import api from '../utils/api'
+interface CommentStore {
+  comments: Comment[]; loading: boolean; error: string | null;
+  fetchComments: (articleId: string) => Promise<Comment[]>;
+  addComment: (articleId: string, content: string) => Promise<Comment>;
+  deleteComment: (commentId: string) => Promise<void>;
+}
 
-const useCommentStore = create((set, get) => ({
-    comments: [],
-    loading: false,
-    error: null,
+const errorMessage = (error: unknown, fallback: string) => axios.isAxiosError<ApiErrorResponse>(error) ? error.response?.data?.message ?? fallback : fallback;
 
-    // Lấy tất cả comments cho một bài viết
-    fetchComments: async (articleId) => {
-        set({ loading: true, error: null })
-        try {
-            const res = await api.get(`/comments/article/${articleId}`)
-            set({ comments: res.data, loading: false })
-            return res.data
-        } catch (err) {
-            set({ error: err.response?.data?.message || 'Failed to fetch comments', loading: false })
-            throw err
-        }
-    },
-
-    // Thêm comment mới
-    addComment: async (articleId, content) => {
-        set({ loading: true, error: null })
-        try {
-            const res = await api.post(`/comments/${articleId}`, { content })
-            const newComment = res.data.comment
-            
-            // Thêm comment mới vào đầu danh sách comments hiện tại
-            set((state) => ({
-                comments: [newComment, ...state.comments],
-                loading: false
-            }))
-            return newComment
-        } catch (err) {
-            set({ error: err.response?.data?.message || 'Failed to add comment', loading: false })
-            throw err
-        }
-    },
-
-    // Xóa comment
-    deleteComment: async (commentId) => {
-        set({ loading: true, error: null })
-        try {
-            await api.delete(`/comments/${commentId}`)
-            
-            // Lọc bỏ comment khỏi state
-            set((state) => ({
-                comments: state.comments.filter((c) => c._id !== commentId),
-                loading: false
-            }))
-        } catch (err) {
-            set({ error: err.response?.data?.message || 'Failed to delete comment', loading: false })
-            throw err
-        }
-    },
-}))
+const useCommentStore = create<CommentStore>((set) => ({
+  comments: [], loading: false, error: null,
+  fetchComments: async (articleId) => {
+    set({ loading: true, error: null });
+    try { const response = await api.get<Comment[]>(`/comments/article/${articleId}`); set({ comments: response.data, loading: false }); return response.data; }
+    catch (error) { set({ error: errorMessage(error, "Failed to fetch comments"), loading: false }); throw error; }
+  },
+  addComment: async (articleId, content) => {
+    set({ loading: true, error: null });
+    try { const response = await api.post<{ comment: Comment }>(`/comments/${articleId}`, { content }); set((state) => ({ comments: [response.data.comment, ...state.comments], loading: false })); return response.data.comment; }
+    catch (error) { set({ error: errorMessage(error, "Failed to add comment"), loading: false }); throw error; }
+  },
+  deleteComment: async (commentId) => {
+    set({ loading: true, error: null });
+    try { await api.delete(`/comments/${commentId}`); set((state) => ({ comments: state.comments.filter((comment) => comment._id !== commentId), loading: false })); }
+    catch (error) { set({ error: errorMessage(error, "Failed to delete comment"), loading: false }); throw error; }
+  },
+}));
 
 export default useCommentStore;
