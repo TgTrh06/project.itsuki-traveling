@@ -1,20 +1,23 @@
-// @ts-nocheck
 import jwt from 'jsonwebtoken';
+import type { Response } from "express";
+import { getEnv, isProduction } from "../config/env.js";
 
-export const generateTokenAndSetCookie = (res, userId) => {
-    const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
+const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction(),
+    sameSite: isProduction() ? ("none" as const) : ("lax" as const),
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
+};
+
+export const generateTokenAndSetCookie = (res: Response, userId: string) => {
+    const token = jwt.sign({ userId }, getEnv().JWT_SECRET, {
         expiresIn: '7d', // Token valid for 7 days
     });
 
-    // For cross-origin requests from the frontend (different port), prefer a
-    // permissive sameSite in development. In production we use 'none' and
-    // require secure cookies.
-    res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Set to true in production
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    res.cookie("token", token, cookieOptions);
 
     return token;
 }
+
+export const clearAuthCookie = (res: Response) => res.clearCookie("token", cookieOptions);

@@ -1,5 +1,4 @@
-// @ts-nocheck
-export default function slugify(text = "") {
+export default function slugify(text: string = "") {
     return text
         .toString()
         .normalize("NFKD") // normalize unicode characters

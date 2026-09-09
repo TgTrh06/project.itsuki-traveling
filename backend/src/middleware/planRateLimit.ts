@@ -1,12 +1,12 @@
-// @ts-nocheck
+import type { RequestHandler } from "express";
 // Simple in-memory rate limiter for plan endpoints
 // Limits requests per user/IP to N requests per window
-const rateMap = new Map();
+const rateMap = new Map<string, { count: number; start: number }>();
 
-export default function planRateLimit({ windowMs = 60 * 1000, max = 30 } = {}) {
+export default function planRateLimit({ windowMs = 60 * 1000, max = 30 }: { windowMs?: number; max?: number } = {}): RequestHandler {
   return (req, res, next) => {
     try {
-      const key = req.user?._id?.toString() || req.ip;
+      const key = req.user?._id?.toString() || req.ip || "unknown";
       const now = Date.now();
       const entry = rateMap.get(key) || { count: 0, start: now };
 
@@ -26,7 +26,7 @@ export default function planRateLimit({ windowMs = 60 * 1000, max = 30 } = {}) {
       entry.count += 1;
       rateMap.set(key, entry);
       return next();
-    } catch (err) {
+    } catch {
       return next();
     }
   };
