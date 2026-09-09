@@ -1,13 +1,8 @@
-// @ts-nocheck
 import mongoose from "mongoose";
+import { getEnv } from "./env.js";
+import { logger } from "../utils/logger.js";
 
 export const connectDB = async () => {
-    try {
-        console.log("mongo uri", process.env.MONGO_URI); 
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log(`MongoDB connected: ${mongoose.connection.host}`);
-    } catch (error) {
-        console.log("Error connecting to database", error.message);
-        process.exit(1);
-    }
-}
+  await mongoose.connect(getEnv().MONGO_URI);
+  logger.info("database_connected", { host: mongoose.connection.host });
+};
