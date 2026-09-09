@@ -56,7 +56,7 @@ Copy `backend/.env.example` to `backend/.env` and provide these values:
 - `PORT` — API port, default `5000`
 - `NODE_ENV` — normally `development` locally
 
-The frontend currently has no runtime environment variables; see `frontend/.env.example`.
+For the frontend, copy `frontend/.env.example` to `frontend/.env` when the API is hosted separately and set `VITE_API_BASE_URL`.
 
 ## Database seeds
 
@@ -67,7 +67,7 @@ npm run seed
 
 The command seeds destinations and interests. It also creates sample articles when at least one user already exists in the database; otherwise, it skips sample articles and prints a message.
 
-> Warning: the seed command replaces existing destinations and interests. When a user exists, it also replaces existing articles. Do not run it against production data.
+> Warning: the seed command replaces existing destinations and interests. When a user exists, it also replaces existing articles. It is blocked unless `NODE_ENV=development`; a non-development reset requires `ALLOW_DESTRUCTIVE_SEED=true`. Do not run it against production data.
 
 Individual seed commands remain available:
 
@@ -84,11 +84,14 @@ npm run seed:articles
 cd frontend
 npm run type-check
 npm run build
+npm run test
 
 # Backend
 cd ../backend
 npm run type-check
 npm run build
+npm run test
+npm run test:integration # requires MongoDB binary download/cache on first run
 ```
 
 After building the backend, start the compiled API with `npm start`.
